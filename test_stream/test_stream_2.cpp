@@ -24,11 +24,13 @@ int main()
 
         cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
 
-        camera.SetResolution(640, 480);
+        int     width = 160;
+        int     height = 120;
+        camera.SetResolution(width, height);
 
         cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
 
-        cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Olle2", 640, 480);
+        cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Olle2", width, height);
 
         cv::Mat source;
 
