@@ -11,11 +11,17 @@
 #include <thread>
 #include <chrono>
 
+
 #include "GripPipeline.h"
 #include <string>
 #include <iostream>
 
+#include "networktables/NetworkTable.h"
+#include "networktables/NetworkTableEntry.h"
+#include "networktables/NetworkTableInstance.h"
+
 int main(){
+	// camera setup
 	int cWidth = 320;
 	int cHeight = 240;
 	grip::GripPipeline pipeline;
@@ -28,6 +34,12 @@ int main(){
 	cv::Mat* output_ptr;
 	char input_variable;
 	bool exit_loop = false;
+
+//network tables setup
+	nt::NetworkTableEntry entry;
+	auto inst = nt::NetworkTableInstance::GetDefault();
+	auto table = inst.GetTable("table");
+	
 	while( exit_loop == false )
         {
 	std::cout << "Waiting to start camera capture " << std::endl;
@@ -39,10 +51,13 @@ int main(){
 	    {
 	       if ( input_variable == 's' )
 	       {
+			    pipeline.Process(source);
                  std::string path = "~/RP_Vision_2019/test_stream/images/Image_" + std::to_string(counter) + ".jpg"; 
  	         std::cout << path << std::endl;
 	         cv::imwrite( path , source);   
                  counter++;
+				 // putting counter in network table
+				 table->PutNumber("counter", counter);
 	         outputStreamStd.PutFrame(source);
 		}
 		else if ( input_variable == 'e' )
