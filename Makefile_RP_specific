@@ -1,17 +1,20 @@
-EXE=test_stream_2
-CXX=arm-raspbian9-linux-gnueabihf-g++ 
+EXE=multiCameraServerExample
 DESTDIR?=/home/pi/
 
-.PHONY: clean build
+.PHONY: clean build install
 
 build: ${EXE}
+
+install: build
+	cp ${EXE} runCamera ${DESTDIR}
 
 clean:
 	rm ${EXE} *.o
 
-${EXE}: test_stream_2.o GripPipeline.o
+
+${EXE}: main.o GripPipeline.o
 	${CXX} -pthread -o $@ $< GripPipeline.o \
-	    -L"C:\Users\Martin\Documents\FRC_2019\Software\Raspbian9-Windows-Toolchain-6.3.0\raspbian9\arm-raspbian9-linux-gnueabihf\RP_frc\frc\lib" \
+	    -L/usr/local/frc/lib \
 	    -lwpilibc \
 	    -lwpiHal \
 	    -lcameraserver \
@@ -36,4 +39,4 @@ ${EXE}: test_stream_2.o GripPipeline.o
 	    -lopencv_core
 
 .cpp.o:
-	${CXX} -pthread -O -c -o $@ -I"C:\Users\Martin\Documents\FRC_2019\Software\Raspbian9-Windows-Toolchain-6.3.0\raspbian9\arm-raspbian9-linux-gnueabihf\RP_frc\frc\include" $<
+	${CXX} -pthread -O -c -o $@ -I/usr/local/frc/include $<

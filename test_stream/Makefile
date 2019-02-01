@@ -1,4 +1,5 @@
 EXE=test_stream_2
+CXX=arm-raspbian9-linux-gnueabihf-g++ 
 DESTDIR?=/home/pi/
 
 .PHONY: clean build
@@ -10,7 +11,7 @@ clean:
 
 ${EXE}: test_stream_2.o GripPipeline.o
 	${CXX} -pthread -o $@ $< GripPipeline.o \
-	    -L/usr/local/frc/lib \
+	    -L"C:\Users\Martin\Documents\FRC_2019\Software\Raspbian9-Windows-Toolchain-6.3.0\raspbian9\arm-raspbian9-linux-gnueabihf\RP_frc\frc\lib" \
 	    -lwpilibc \
 	    -lwpiHal \
 	    -lcameraserver \
@@ -35,4 +36,4 @@ ${EXE}: test_stream_2.o GripPipeline.o
 	    -lopencv_core
 
 .cpp.o:
-	${CXX} -pthread -O -c -o $@ -I/usr/local/frc/include $<
+	${CXX} -pthread -O -c -o $@ -I"C:\Users\Martin\Documents\FRC_2019\Software\Raspbian9-Windows-Toolchain-6.3.0\raspbian9\arm-raspbian9-linux-gnueabihf\RP_frc\frc\include" $<
