@@ -23,22 +23,18 @@ namespace grip {
 */
 class GripPipeline : public frc::VisionPipeline {
 	private:
-		cv::Mat hsvThresholdOutput;
-		std::vector<std::vector<cv::Point> > findContoursOutput;
-		std::vector<std::vector<cv::Point> > filterContoursOutput;
-		void hsvThreshold(cv::Mat &, double [], double [], double [], cv::Mat &);
-		void findContours(cv::Mat &, bool , std::vector<std::vector<cv::Point> > &);
-		void filterContours(std::vector<std::vector<cv::Point> > &, double , double , double , double , double , double , double [], double , double , double , double , std::vector<std::vector<cv::Point> > &);
+		cv::Mat desaturateOutput;
+		cv::Mat cvApplycolormapOutput;
+		void desaturate(cv::Mat &, cv::Mat &);
+		void cvApplycolormap(cv::Mat &, int , cv::Mat &);
 
 	public:
 		GripPipeline();
 		void Process(cv::Mat& source0) override;
-		cv::Mat* GetHsvThresholdOutput();
-		std::vector<std::vector<cv::Point> >* GetFindContoursOutput();
-		std::vector<std::vector<cv::Point> >* GetFilterContoursOutput();
+		cv::Mat* GetDesaturateOutput();
+		cv::Mat* GetCvApplycolormapOutput();
 };
 
 
 } // end namespace grip
-
 
