@@ -15,7 +15,6 @@
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
 
-
 int main()
 {
 	// Create an object for network tables //
@@ -23,19 +22,17 @@ int main()
 	//  Create a new table "visiontable"
 	auto table = inst.GetTable("visiontable");
 	// initial counters creation
-	nt::NetworkTableEntry xEntry =  table->GetEntry("x");
-	nt::NetworkTableEntry yEntry =  table->GetEntry("y");
+	nt::NetworkTableEntry e_Target =  table->GetEntry("e_Target");
 	// add one to x , 2 to y
-	int x = 0;
-	int y = 0;
+	double x = 0;
+	int seconds = 5;
 	while(true){
-		x = x + 1;
-		y = y + 2;
-		// Save these values to the table.
-		// Save X
-		xEntry.SetDouble(x);
-		// Save Y
-		yEntry.SetDouble(y);
+		x = 20;
+		e_Target.SetDouble(x);
+		std::this_thread::sleep_for (std::chrono::seconds(seconds));
+		x = -20;
+		e_Target.SetDouble(x);
+	 	std::this_thread::sleep_for (std::chrono::seconds(seconds));
 	}
 	return 0;
 
