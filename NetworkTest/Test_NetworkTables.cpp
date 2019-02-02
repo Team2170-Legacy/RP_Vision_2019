@@ -14,11 +14,17 @@
 #include "networktables/NetworkTable.h"
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
-
+#include <iostream>
+using namespace std;
 int main()
 {
+	unsigned int port = 1735;
+
 	// Create an object for network tables //
 	auto inst = nt::NetworkTableInstance::GetDefault();
+	std::cout<<"Network Table Created"<<std::endl;
+	inst.StartClient("169.254.204.129",port);
+	std::cout<<"Network Table Started"<<std::endl;
 	//  Create a new table "visiontable"
 	auto table = inst.GetTable("visiontable");
 	// initial counters creation
