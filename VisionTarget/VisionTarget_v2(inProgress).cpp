@@ -22,7 +22,8 @@
 #include "networktables/NetworkTableInstance.h"
 
 int main(){
-		grip::GripPipeline pipeline;
+
+	  grip::GripPipeline pipeline;
 	// camera setup
 	int cWidth = 320;
 	int cHeight = 240;
@@ -30,13 +31,23 @@ int main(){
 	int cWhiteBalance = 5100;
         cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
         camera.SetResolution(cWidth,cHeight);
-	    camera.SetExposureManual(cExposure);
+		camera.SetExposureManual(cExposure);
 	    camera.SetWhiteBalanceManual(cWhiteBalance);
         cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
         cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Olle2", cWidth,cHeight);
-        cv::Mat source;
+       
+	   // images
+	    cv::Mat source;
         cv::Mat output;
-	cv::Mat* output_ptr;
+		cv::Mat output_ptr;
+
+		// for contours
+		cv::Rect r1, r2;
+	std::vector<std::vector<cv::Point> >* contours_ptr;
+	std::vector<std::vector<cv::Point> > contours;
+	std::vector<cv::Point> contour1;
+	std::vector<cv::Point> contour2;
+
 	char input_variable;
 	bool exit_loop = false;
 
@@ -56,14 +67,24 @@ int main(){
 	    {
 	       if ( input_variable == 's' )
 	       {
+			   // getting contours output from pipeline
 			    pipeline.Process(source);
+				contours_ptr = pipeline.GetFilterContoursOutput();
+	            contours = *contours_ptr;
+
+              // contours need to be converted to an image
+			  if(!contours.empty()){
+			  output_ptr = contoursToMat(contours);
+			  output = *output_ptr;
+		   
                  std::string path = "~/RP_Vision_2019/test_stream/images/Image_" + std::to_string(counter) + ".jpg"; 
  	         std::cout << path << std::endl;
-	         cv::imwrite( path , source);   
+	         cv::imwrite( path , output);   
                  counter++;
 				 // putting counter in network table
 				 table->PutNumber("counter", counter);
-	         outputStreamStd.PutFrame(source);
+	         outputStreamStd.PutFrame(output);
+			  } 
 		}
 		else if ( input_variable == 'e' )
 		{
@@ -81,3 +102,9 @@ int main(){
 
 
 };
+
+// method to convert contours to mat(image)
+
+cv::Mat* contoursToMat(std::vector<std::vector<cv::Point> > contours) {
+return cv::Mat;
+}
