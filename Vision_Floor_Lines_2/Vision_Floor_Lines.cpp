@@ -38,6 +38,18 @@ int main()
 
         cv::Mat* output_ptr;
 
+        std::vector<std::vector<cv::Point> >* contours_ptr;
+
+        std::vector<std::vector<cv::Point> > contours;
+
+        std::vector<cv::Point> contour1;
+
+        std::vector<cv::Point> contour2;
+
+        cv::Rect r1, r2;
+
+        cv::Point tl1;
+        cv::Point br1;
 // read in image file
 //    Mat image; 
     source = cv::imread("2019-02-02_10-30-20-233.png", CV_LOAD_IMAGE_COLOR);
@@ -47,20 +59,35 @@ int main()
             std::cout <<  "Could not open or find the image" << std::endl ;
             return -1;
     }
-
-        while(true) {
+  
+ //       while(true) 
+  //      {
 
 
 //            cvSink.GrabFrame(source);
 
-
+//69
 //MK        output = source;
             if ( source.rows > 0)
             {
 //**               cvtColor(source, output, cv::COLOR_BGR2GRAY);
-             pipeline.Process(source);
-             output_ptr = pipeline.GetCvApplycolormapOutput();
-             output = *output_ptr;
+                pipeline.Process(source);
+                contours_ptr = pipeline.GetFilterContoursOutput();
+                contours = *contours_ptr;
+
+                contour1 =contours[0];
+
+                r1 = cv::boundingRect(contour1);
+//                r2 = cv::boundingRect(contour2);
+
+                tl1 = r1.tl();
+                br1 = r1.br();
+                std::cout << "Top left of rectangle x: (" << tl1.x << ")" << std::endl;
+                std::cout << "Top left of rectangle y: (" << tl1.y << ")" << std::endl;
+                std::cout << "Bottom right of rectangle x: (" << br1.x << ")" << std::endl;
+                std::cout << "Bottom right of rectangle y: (" << br1.y << ")" << std::endl;
+             //output_ptr = pipeline.GetCvApplycolormapOutput();
+             //output = *output_ptr;
 
 
              outputStreamStd.PutFrame(output);
@@ -68,7 +95,7 @@ int main()
 
 //          std::this_thread::sleep_for (std::chrono::milliseconds(100));
             }
-        }
+ //       }
 
 
 //    }
