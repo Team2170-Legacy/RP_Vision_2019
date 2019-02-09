@@ -1,18 +1,14 @@
-EXE=multiCameraServerExample
+EXE=test_stream_2
 DESTDIR?=/home/pi/
 
-.PHONY: clean build install
+.PHONY: clean build
 
 build: ${EXE}
-
-install: build
-	cp ${EXE} runCamera ${DESTDIR}
 
 clean:
 	rm ${EXE} *.o
 
-
-${EXE}: main.o GripPipeline.o
+${EXE}: test_stream_2.o GripPipeline.o
 	${CXX} -pthread -o $@ $< GripPipeline.o \
 	    -L/usr/local/frc/lib \
 	    -lwpilibc \
