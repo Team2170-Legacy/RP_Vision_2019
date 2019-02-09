@@ -20,7 +20,7 @@ int main()
 
 //    {
 
-	grip::GripPipeline pipeline;
+        grip::GripPipeline pipeline;
 
         cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
 
@@ -36,27 +36,27 @@ int main()
 
         cv::Mat output;
 
-	cv::Mat* output_ptr;
+        cv::Mat* output_ptr;
 
         while(true) {
 
-            
+
             cvSink.GrabFrame(source);
 
-//MK	    output = source;
+//MK        output = source;
             if ( source.rows > 0)
-	    {
+            {
 //**               cvtColor(source, output, cv::COLOR_BGR2GRAY);
-	     pipeline.Process(source);
-	     output_ptr = pipeline.GetCvApplycolormapOutput();
-	     output = *output_ptr;
+             pipeline.Process(source);
+             output_ptr = pipeline.GetCvApplycolormapOutput();
+             output = *output_ptr;
 
 
              outputStreamStd.PutFrame(output);
-//MK	    outputStreamStd.PutFrame(source);
+//MK        outputStreamStd.PutFrame(source);
 
-//	    std::this_thread::sleep_for (std::chrono::milliseconds(100));
-	    }
+//          std::this_thread::sleep_for (std::chrono::milliseconds(100));
+            }
         }
 
 
@@ -66,7 +66,7 @@ int main()
 
 //    visionThread.detach();
 
-	return 0;
+        return 0;
 
 
 };
