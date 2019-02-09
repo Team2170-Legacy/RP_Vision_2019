@@ -13,66 +13,117 @@
 
 
 #include "GripPipeline.h"
-#include "GripPipeline.cpp"
 #include <string>
 #include <iostream>
-
 #include "networktables/NetworkTable.h"
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
 
+cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
+{
+    // compute mask (you could use a simple threshold if the image is always as good as the one you provided)
+    cv::Mat mask;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(mask,contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+
+    /// Draw contours and find biggest contour (if there are other contours in the image, we assume the biggest one is the desired rect)
+    // drawing here is only for demonstration!
+    int biggestContourIdx = -1;
+    float biggestContourArea = 0;
+    cv::Mat drawing = cv::Mat::zeros( mask.size(), CV_8UC3 );
+    for( int i = 0; i< contours.size(); i++ )
+    {
+        cv::Scalar color = cv::Scalar(0, 100, 0);
+        drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, cv::Point() );
+
+        float ctArea= cv::contourArea(contours[i]);
+        if(ctArea > biggestContourArea)
+        {
+            biggestContourArea = ctArea;
+            biggestContourIdx = i;
+        }
+    }
+
+    // if no contour found
+    if(biggestContourIdx < 0)
+    {
+        std::cout << "no contour found" << std::endl;
+        return source;
+    }
+    // compute the rotated bounding rect of the biggest contour! (this is the part that does what you want/need)
+    cv::RotatedRect boundingBox = cv::minAreaRect(contours[biggestContourIdx]);
+    // one thing to remark: this will compute the OUTER boundary box, so maybe you have to erode/dilate if you want something between the ragged lines
+
+    // draw the rotated rect
+    cv::Point2f corners[4];
+    boundingBox.points(corners);
+    cv::line(drawing, corners[0], corners[1], cv::Scalar(255,255,255));
+    cv::line(drawing, corners[1], corners[2], cv::Scalar(255,255,255));
+    cv::line(drawing, corners[2], corners[3], cv::Scalar(255,255,255));
+    cv::line(drawing, corners[3], corners[0], cv::Scalar(255,255,255));
+
+	return drawing;
+}
+
 int main(){
+
 		grip::GripPipeline pipeline;
 	// camera setup
 	int cWidth = 320;
 	int cHeight = 240;
-	int cExposure = 17;
+	int cExposure = 2;
 	int cWhiteBalance = 5100;
-        cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
-        camera.SetResolution(cWidth,cHeight);
-	    camera.SetExposureManual(cExposure);
-	    camera.SetWhiteBalanceManual(cWhiteBalance);
-        cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
-        cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Olle2", cWidth,cHeight);
-        cv::Mat source;
-        cv::Mat output;
+	cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
+	camera.SetResolution(cWidth,cHeight);
+	camera.SetExposureManual(cExposure);
+	camera.SetWhiteBalanceManual(cWhiteBalance);
+	cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
+	cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("hsvoutput", cWidth,cHeight);
+	cs::CvSource outputStreamRectStd = frc::CameraServer::GetInstance()->PutVideo("countouroutput", cWidth,cHeight);
+	cv::Mat source;
+	cv::Mat output;
 	cv::Mat* output_ptr;
 	char input_variable;
 	bool exit_loop = false;
-
+	cv::Mat* hsv_mat_ptr;
+	cv::Mat hsv_mat;
+	std::vector<std::vector<cv::Point> >* contours_ptr;
+	std::vector<std::vector<cv::Point> > contours;
 //network tables setup
 	nt::NetworkTableEntry entry;
 	auto inst = nt::NetworkTableInstance::GetDefault();
 	auto table = inst.GetTable("table");
-	
 	while( exit_loop == false )
         {
 	std::cout << "Waiting to start camera capture " << std::endl;
 	std::cin >>  input_variable;
-        int counter = 0;
-        while(true) {
-            cvSink.GrabFrame(source);
-            if ( source.rows > 0)
-	    {
+  int counter = 0;
+  while(true) {
+  	cvSink.GrabFrame(source);
+  	if ( source.rows > 0){
 	       if ( input_variable == 's' )
 	       {
-			    pipeline.Process(source);
-                 std::string path = "~/RP_Vision_2019/test_stream/images/Image_" + std::to_string(counter) + ".jpg"; 
- 	         std::cout << path << std::endl;
-	         cv::imwrite( path , source);   
-                 counter++;
-				 // putting counter in network table
-				 table->PutNumber("counter", counter);
-	         outputStreamStd.PutFrame(source);
-		}
-		else if ( input_variable == 'e' )
-		{
-			exit_loop = true;
-		}
-		else
-		{
-		  outputStreamStd.PutFrame(source);
-		}
+						pipeline.Process(source);
+						hsv_mat_ptr = pipeline.GetHsvThresholdOutput();
+						hsv_mat = *hsv_mat_ptr;
+						outputStreamStd.PutFrame(hsv_mat);
+						std::string path = "~/RP_Vision_2019/VisionTarget/Image_" + std::to_string(counter) + ".png";
+						std::cout <<  cv::imwrite( path , source) << std::endl;
+						// DO something with the contours from GRIP Pipeline now.
+						contours_ptr = pipeline.GetFilterContoursOutput();
+						contours = *contours_ptr;
+						std::string path3 = "~/RP_Vision_2019/VisionTarget/Image_HSV" + std::to_string(counter) + ".png"; 
+						// DO something with the contours from GRIP Pipeline now.
+						std::cout << cv::imwrite( path3 , hsv_mat) << std::endl;  						
+						if(!contours.empty()){
+							cv::Mat rect_output = detect_rectangles(source,contours);
+							std::string path2 = "~/RP_Vision_2019/VisionTarget/Image_Rect_" + std::to_string(counter) + ".png"; 
+							std::cout << cv::imwrite( path2 , rect_output) << std::endl;
+							outputStreamRectStd.PutFrame(rect_output);
+						}
+						counter++;
+						
+					}
 	    }
         
 	}
