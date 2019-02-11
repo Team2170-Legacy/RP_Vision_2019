@@ -21,12 +21,13 @@
 
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
+	cv::Mat drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
 	if (contours.size() < 2)
 	{
-		return source;
+		return drawing;
 	}	
 	//cv::findContours(mask,contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-	cv::Mat drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
+	
 	/*
     // compute mask (you could use a simple threshold if the image is always as good as the one you provided)
     cv::Mat mask;
