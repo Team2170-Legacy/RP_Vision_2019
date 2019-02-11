@@ -21,6 +21,13 @@
 
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
+	if (contours.size() < 2)
+	{
+		return source;
+	}	
+	//cv::findContours(mask,contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+	cv::Mat drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
+	/*
     // compute mask (you could use a simple threshold if the image is always as good as the one you provided)
     cv::Mat mask;
     std::vector<cv::Vec4i> hierarchy;
@@ -35,32 +42,30 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
     {
         cv::Scalar color = cv::Scalar(0, 100, 0);
         drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, cv::Point() );
-
-        float ctArea= cv::contourArea(contours[i]);
-        if(ctArea > biggestContourArea)
-        {
-            biggestContourArea = ctArea;
-            biggestContourIdx = i;
-        }
     }
 
     // if no contour found
+	/*
     if(biggestContourIdx < 0)
     {
         std::cout << "no contour found" << std::endl;
         return source;
     }
+	*/
     // compute the rotated bounding rect of the biggest contour! (this is the part that does what you want/need)
-    cv::RotatedRect boundingBox = cv::minAreaRect(contours[biggestContourIdx]);
-    // one thing to remark: this will compute the OUTER boundary box, so maybe you have to erode/dilate if you want something between the ragged lines
+	for ( int c = 0; c < 2; c++)
+	{
+		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
+		// one thing to remark: this will compute the OUTER boundary box, so maybe you have to erode/dilate if you want something between the ragged lines
 
-    // draw the rotated rect
-    cv::Point2f corners[4];
-    boundingBox.points(corners);
-    cv::line(drawing, corners[0], corners[1], cv::Scalar(255,255,255));
-    cv::line(drawing, corners[1], corners[2], cv::Scalar(255,255,255));
-    cv::line(drawing, corners[2], corners[3], cv::Scalar(255,255,255));
-    cv::line(drawing, corners[3], corners[0], cv::Scalar(255,255,255));
+		// draw the rotated rect
+		cv::Point2f corners[4];
+		boundingBox.points(corners);
+		cv::line(drawing, corners[0], corners[1], cv::Scalar(255,255,255));
+		cv::line(drawing, corners[1], corners[2], cv::Scalar(255,255,255));
+		cv::line(drawing, corners[2], corners[3], cv::Scalar(255,255,255));
+		cv::line(drawing, corners[3], corners[0], cv::Scalar(255,255,255));
+	}
 
 	return drawing;
 }
@@ -108,17 +113,18 @@ int main(){
 						hsv_mat = *hsv_mat_ptr;
 						outputStreamStd.PutFrame(hsv_mat);
 						std::string path = "~/RP_Vision_2019/VisionTarget/Image_" + std::to_string(counter) + ".png";
-						std::cout <<  cv::imwrite( path , source) << std::endl;
+						//std::cout <<  cv::imwrite( path , source) << std::endl;
 						// DO something with the contours from GRIP Pipeline now.
 						contours_ptr = pipeline.GetFilterContoursOutput();
 						contours = *contours_ptr;
+						//std::cout <<  contours.size() << std::endl;
 						std::string path3 = "~/RP_Vision_2019/VisionTarget/Image_HSV" + std::to_string(counter) + ".png"; 
 						// DO something with the contours from GRIP Pipeline now.
-						std::cout << cv::imwrite( path3 , hsv_mat) << std::endl;  						
+						//std::cout << cv::imwrite( path3 , hsv_mat) << std::endl;  						
 						if(!contours.empty()){
 							cv::Mat rect_output = detect_rectangles(source,contours);
 							std::string path2 = "~/RP_Vision_2019/VisionTarget/Image_Rect_" + std::to_string(counter) + ".png"; 
-							std::cout << cv::imwrite( path2 , rect_output) << std::endl;
+							//std::cout << cv::imwrite( path2 , rect_output) << std::endl;
 							outputStreamRectStd.PutFrame(rect_output);
 						}
 						counter++;

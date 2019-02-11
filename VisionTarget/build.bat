@@ -1,11 +1,7 @@
 set /P ip=Enter PI IP: 
-set /P ProjectName=Enter Project Name:
-set /P copyfilename=Enter Executable Filename:
+set /P copyfilename=Enter Project Name:
 make
 pause
-scp %copyfilename% pi@%ip%:~/RP_Vision_2019/%ProjectName%/%copyfilename%
-pause
-scp %copyfilename% pi@%ip%:~/RP_Vision_2019/%ProjectName%/%copyfilename%.o
-pause
-scp GripPipeline.o pi@%ip%:~/RP_Vision_2019/%ProjectName%/GripPipeline.o
-pause
+scp %copyfilename% pi@%ip%:~/RP_Vision_2019/%copyfilename%/%copyfilename%
+scp %copyfilename% pi@%ip%:~/RP_Vision_2019/%copyfilename%/%copyfilename%.o
+scp GripPipeline.o pi@%ip%:~/RP_Vision_2019/%copyfilename%/GripPipeline.o
