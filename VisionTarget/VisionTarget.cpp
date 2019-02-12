@@ -53,12 +53,17 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
         return source;
     }
 	*/
+float max_y , max_x;
+float least_y, least_X;
+cv::Point2f* topLeft;
+cv::Point2f* bottomLeft;
+cv::Point2f* topRight;
+cv::Point2f* bottomRight;
     // compute the rotated bounding rect of the biggest contour! (this is the part that does what you want/need)
 	for ( int c = 0; c < 2; c++)
 	{
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
 		// one thing to remark: this will compute the OUTER boundary box, so maybe you have to erode/dilate if you want something between the ragged lines
-
 		// draw the rotated rect
 		cv::Point2f corners[4];
 		boundingBox.points(corners);
@@ -66,7 +71,46 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		cv::line(drawing, corners[1], corners[2], cv::Scalar(255,255,255));
 		cv::line(drawing, corners[2], corners[3], cv::Scalar(255,255,255));
 		cv::line(drawing, corners[3], corners[0], cv::Scalar(255,255,255));
+		if (c == 0)
+		{
+			topLeft = new cv::Point2f(corners[1].x, corners[0].y);
+			bottomLeft = new cv::Point2f(corners[1].x, corners[2].y);
+		}
+		else
+		{
+			topRight = new cv::Point2f(corners[2].x, corners[3].y);
+			bottomRight = new cv::Point2f(corners[2].x, corners[1].y);
+		}
+
+
+/*
+Left Rectangle
+topleft red 0
+topright white 3
+bottomleft green 1
+bottomright blue 2
+
+Right Rectangle
+topleft green 1
+topright red 0
+bottomleft blue 2
+bottomright white 3
+
+Left Rectangle GreenX 1.x , RedY 0.y, Topleft Corner
+Left Rectangle GreenX 1.x , BlueY 2.y, Bottomleft Corner
+Right rectangle WhiteX 3.x, RedY 0.y, Topright corner
+Right Rectangle Whitex 3.x, BlueY 2.y Bottomright corner
+*/
+	cv::circle(drawing, corners[0], 5, cv::Scalar(255,0,0));
+	cv::circle(drawing, corners[1], 5, cv::Scalar(0,255,0));
+	cv::circle(drawing, corners[2], 5, cv::Scalar(0,0,255));
+	cv::circle(drawing, corners[3], 5, cv::Scalar(255,255,255));
 	}
+		
+		cv::line(drawing, *topLeft, *bottomLeft, cv::Scalar(255,255,255));
+		cv::line(drawing, *bottomLeft, *bottomRight, cv::Scalar(255,255,255));
+		cv::line(drawing, *bottomRight, *topRight, cv::Scalar(255,255,255));
+		cv::line(drawing, *topRight, *topLeft, cv::Scalar(255,255,255));
 
 	return drawing;
 }
