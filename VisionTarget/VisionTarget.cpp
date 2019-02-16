@@ -19,46 +19,20 @@
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
 
-cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
+cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours,int counter)
 {
 	cv::Mat drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
+	//cv::imwrite("/home/pi/RP_Vision_2019/VisionTarget/images/drawing.jpg",drawing);
+	drawing = source;
 	if (contours.size() < 2)
 	{
 		return drawing;
 	}	
-	//cv::findContours(mask,contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-	
-	/*
-    // compute mask (you could use a simple threshold if the image is always as good as the one you provided)
-    cv::Mat mask;
-    std::vector<cv::Vec4i> hierarchy;
-    cv::findContours(mask,contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-
-    /// Draw contours and find biggest contour (if there are other contours in the image, we assume the biggest one is the desired rect)
-    // drawing here is only for demonstration!
-    int biggestContourIdx = -1;
-    float biggestContourArea = 0;
-    cv::Mat drawing = cv::Mat::zeros( mask.size(), CV_8UC3 );
-    for( int i = 0; i< contours.size(); i++ )
-    {
-        cv::Scalar color = cv::Scalar(0, 100, 0);
-        drawContours( drawing, contours, i, color, 1, 8, hierarchy, 0, cv::Point() );
-    }
-
-    // if no contour found
-	/*
-    if(biggestContourIdx < 0)
-    {
-        std::cout << "no contour found" << std::endl;
-        return source;
-    }
-	*/
-float max_y , max_x;
-float least_y, least_X;
-cv::Point2f* topLeft;
-cv::Point2f* bottomLeft;
-cv::Point2f* topRight;
-cv::Point2f* bottomRight;
+	cv::Point2f* topLeft;
+	cv::Point2f* bottomLeft;
+	cv::Point2f* topRight;
+	cv::Point2f* bottomRight;
+	std::vector<std::vector<float>> bounding;
     // compute the rotated bounding rect of the biggest contour! (this is the part that does what you want/need)
 	for ( int c = 0; c < 2; c++)
 	{
@@ -71,47 +45,36 @@ cv::Point2f* bottomRight;
 		cv::line(drawing, corners[1], corners[2], cv::Scalar(255,255,255));
 		cv::line(drawing, corners[2], corners[3], cv::Scalar(255,255,255));
 		cv::line(drawing, corners[3], corners[0], cv::Scalar(255,255,255));
-		if (c == 0)
-		{
-			topLeft = new cv::Point2f(corners[1].x, corners[0].y);
-			bottomLeft = new cv::Point2f(corners[1].x, corners[2].y);
-		}
-		else
-		{
-			topRight = new cv::Point2f(corners[2].x, corners[3].y);
-			bottomRight = new cv::Point2f(corners[2].x, corners[1].y);
-		}
-
-
-/*
-Left Rectangle
-topleft red 0
-topright white 3
-bottomleft green 1
-bottomright blue 2
-
-Right Rectangle
-topleft green 1
-topright red 0
-bottomleft blue 2
-bottomright white 3
-
-Left Rectangle GreenX 1.x , RedY 0.y, Topleft Corner
-Left Rectangle GreenX 1.x , BlueY 2.y, Bottomleft Corner
-Right rectangle WhiteX 3.x, RedY 0.y, Topright corner
-Right Rectangle Whitex 3.x, BlueY 2.y Bottomright corner
-*/
-	cv::circle(drawing, corners[0], 5, cv::Scalar(255,0,0));
-	cv::circle(drawing, corners[1], 5, cv::Scalar(0,255,0));
-	cv::circle(drawing, corners[2], 5, cv::Scalar(0,0,255));
-	cv::circle(drawing, corners[3], 5, cv::Scalar(255,255,255));
+		//cv::circle(drawing, corners[0], 5, cv::Scalar(255,0,0));
+		//cv::circle(drawing, corners[1], 5, cv::Scalar(0,255,0));
+		//cv::circle(drawing, corners[2], 5, cv::Scalar(0,0,255));
+		//cv::circle(drawing, corners[3], 5, cv::Scalar(255,255,255));
+		float MinY = fminf(corners[0].y,fminf(corners[1].y,fminf(corners[2].y,corners[3].y)));
+		float MaxY = fmaxf(corners[0].y,fmaxf(corners[1].y,fmaxf(corners[2].y,corners[3].y)));
+		float MinX = fminf(corners[0].x,fminf(corners[1].x,fminf(corners[2].x,corners[3].x)));
+		float MaxX=  fmaxf(corners[0].x,fmaxf(corners[1].x,fmaxf(corners[2].x,corners[3].x)));
+		std::vector<float> tmp;
+		tmp.push_back(MinX);
+		tmp.push_back(MaxX);
+		tmp.push_back(MinY);
+		tmp.push_back(MaxY);
+		bounding.push_back(tmp);
 	}
-		
-		cv::line(drawing, *topLeft, *bottomLeft, cv::Scalar(255,255,255));
-		cv::line(drawing, *bottomLeft, *bottomRight, cv::Scalar(255,255,255));
-		cv::line(drawing, *bottomRight, *topRight, cv::Scalar(255,255,255));
-		cv::line(drawing, *topRight, *topLeft, cv::Scalar(255,255,255));
-
+	float MinX = fminf(bounding.at(0).at(0),bounding.at(1).at(0));
+	float MaxX = fmaxf(bounding.at(0).at(1),bounding.at(1).at(1));
+	float MinY = fminf(bounding.at(0).at(2),bounding.at(1).at(2));
+	float MaxY = fmaxf(bounding.at(0).at(3),bounding.at(1).at(3));
+	topLeft = new cv::Point2f(MinX, MaxY);
+	bottomLeft = new cv::Point2f(MinX, MinY);
+	topRight = new cv::Point2f(MaxX, MaxY);
+	bottomRight = new cv::Point2f(MaxX, MinY);
+	cv::line(drawing, *topLeft, *bottomLeft, cv::Scalar(255,255,255));
+	cv::line(drawing, *bottomLeft, *bottomRight, cv::Scalar(255,255,255));
+	cv::line(drawing, *bottomRight, *topRight, cv::Scalar(255,255,255));
+	cv::line(drawing, *topRight, *topLeft, cv::Scalar(255,255,255));
+	cv::circle(drawing, cv::Point2f( (MinX+MaxX) / 2, (MinY+MaxY) / 2 ), 5, cv::Scalar(255,255,255));
+	cv::imwrite("/home/pi/RP_Vision_2019/VisionTarget/images/"+ std::to_string(counter) + ".jpg",drawing);
+	std::cout << "/home/pi/RP_Vision_2019/VisionTarget/images/"+ std::to_string(counter) + ".jpg" << std::endl;
 	return drawing;
 }
 
@@ -139,12 +102,11 @@ int main(){
 	cv::Mat hsv_mat;
 	std::vector<std::vector<cv::Point> >* contours_ptr;
 	std::vector<std::vector<cv::Point> > contours;
-//network tables setup
+	//network tables setup
 	nt::NetworkTableEntry entry;
 	auto inst = nt::NetworkTableInstance::GetDefault();
 	auto table = inst.GetTable("table");
-	while( exit_loop == false )
-        {
+	while( exit_loop == false ){
 	std::cout << "Waiting to start camera capture " << std::endl;
 	std::cin >>  input_variable;
   int counter = 0;
@@ -157,18 +119,18 @@ int main(){
 						hsv_mat_ptr = pipeline.GetHsvThresholdOutput();
 						hsv_mat = *hsv_mat_ptr;
 						outputStreamStd.PutFrame(hsv_mat);
-						std::string path = "~/RP_Vision_2019/VisionTarget/Image_" + std::to_string(counter) + ".png";
+						//std::string path = "~/RP_Vision_2019/VisionTarget/Image_" + std::to_string(counter) + ".png";
 						//std::cout <<  cv::imwrite( path , source) << std::endl;
 						// DO something with the contours from GRIP Pipeline now.
 						contours_ptr = pipeline.GetFilterContoursOutput();
 						contours = *contours_ptr;
 						//std::cout <<  contours.size() << std::endl;
-						std::string path3 = "~/RP_Vision_2019/VisionTarget/Image_HSV" + std::to_string(counter) + ".png"; 
+						//std::string path3 = "~/RP_Vision_2019/VisionTarget/Image_HSV" + std::to_string(counter) + ".png"; 
 						// DO something with the contours from GRIP Pipeline now.
 						//std::cout << cv::imwrite( path3 , hsv_mat) << std::endl;  						
 						if(!contours.empty()){
-							cv::Mat rect_output = detect_rectangles(source,contours);
-							std::string path2 = "~/RP_Vision_2019/VisionTarget/Image_Rect_" + std::to_string(counter) + ".png"; 
+							cv::Mat rect_output = detect_rectangles(source,contours,counter);
+							//std::string path2 = "~/RP_Vision_2019/VisionTarget/Image_Rect_" + std::to_string(counter) + ".png"; 
 							//std::cout << cv::imwrite( path2 , rect_output) << std::endl;
 							outputStreamRectStd.PutFrame(rect_output);
 						}
