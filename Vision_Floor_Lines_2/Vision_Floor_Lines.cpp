@@ -53,7 +53,7 @@ int main()
         cv::Point br1;
 // read in image file
 //    Mat image; 
-    source = cv::imread("2019-02-02_10-30-20-233-small.png", CV_LOAD_IMAGE_COLOR);
+    source = cv::imread("Test_Image", CV_LOAD_IMAGE_COLOR);
     
     if(! source.data )
     {
@@ -88,16 +88,48 @@ int main()
                 std::cout << "Top left of rectangle y: (" << tl1.y << ")" << std::endl;
                 std::cout << "Bottom right of rectangle x: (" << br1.x << ")" << std::endl;
                 std::cout << "Bottom right of rectangle y: (" << br1.y << ")" << std::endl;
+                std::vector<cv::Rect> boundingBoxArray;
+
+                //boundingBoxArray.push_back(r1);
+
+ //               boundingBoxArray[1] = r1;
+
+                int num_contours = contours.size();
+                int midpointBox [num_contours];
+                int minimum = 0;
+ //               boundingBoxArray[0] = cv::boundingRect(contours[0]);
+
+
+                for(int count = 0; count < num_contours; count++){        
+                       boundingBoxArray.push_back(cv::boundingRect(contours[count]));
+                        int midx = ( (boundingBoxArray[count].tl()).x + (boundingBoxArray[count].br()).x ) / 2;
+                        int midy = ( (boundingBoxArray[count].tl()).y + (boundingBoxArray[count].br()).y ) / 2;
+                       midpointBox[count] = midx;
+                }
+                int differenceMidpoint [num_contours];
+                for(int count = 0; count < num_contours; count++){
+                        differenceMidpoint[count] = abs((width/2) - midpointBox[count]);
+                }
+                for(int count = 1; count < num_contours; count++){
+                        if(differenceMidpoint[count] < differenceMidpoint[minimum]){
+                                minimum = count;
+                        }
+                }
+
+        {
+                std::cout <<"Minimum: (" << minimum << ")" << std::endl;
+                std::cout <<"Midpoint x: (" << midpointBox[minimum] << ")" <<std::endl; 
+        }
              //output_ptr = pipeline.GetCvApplycolormapOutput();
              //output = *output_ptr;
                 output = source;
-                cv::Scalar color = cv::Scalar(75,0,130); //BGR Dark As Fuk Purple
+                cv::Scalar color = cv::Scalar(75,0,130); //BGR Dark As Fucc Purple
 
 //                tl1.x = 20;
 //                tl1.y = 20;
 //                br1.x = 60;
 //                br1.y = 60;
-                cv::rectangle(output, tl1, br1, color, 4, 8, 0);
+                cv::rectangle(output, boundingBoxArray[minimum].tl(),boundingBoxArray[minimum].br(), color, 4, 8, 0);
 //                cv::rectangle(output, tl2, br2, color, 4, 8, 0);
 
              outputStreamStd.PutFrame(output);
