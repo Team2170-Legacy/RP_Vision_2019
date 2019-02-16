@@ -1,3 +1,5 @@
+//Updated 2/16/19
+
 //#include "WPILib.h"
 #include <cscore.h>
 #include <cscore_cpp.h>
@@ -29,7 +31,6 @@ int main()
 	auto table = inst.GetTable("visiontable");
 	std::cout<<"Got Network Table"<<std::endl;
 	// initial counters creation
-	// nt::NetworkTableEntry e_Target =  table->GetEntry("e_Target");
 	nt::NetworkTableEntry e_Vision =  table->GetEntry("e_Vision");
 	nt::NetworkTableEntry d_Vision =  table->GetEntry("d_Vision");
 	nt::NetworkTableEntry e_FloorLine =  table->GetEntry("e_FloorLine");
@@ -40,27 +41,18 @@ int main()
 	e_FloorLine.SetDouble(0);
 	d_FloorLine.SetDouble(0);
 
-	// add one to x , 2 to y
-	double  x;
-	while(true){
-		x = 1;
-		e_Vision.SetDouble(x);
-	}
-	
-
-	/*
-	double x = 0;
+	//increase values every five seconds
+	double  x = 0;
 	int seconds = 5;
 	while(true){
-		x = 20;
-		e_Target.SetDouble(x);
-		std::this_thread::sleep_for (std::chrono::seconds(seconds));
-		x = -20;
-		e_Target.SetDouble(x);
-	 	std::this_thread::sleep_for (std::chrono::seconds(seconds));
+		x ++;
+		std::this_thread::sleep_for(std::chrono::seconds(seconds));
+		e_Vision.SetDouble(x);
+		d_Vision.SetDouble(2 * x);
+		e_FloorLine.SetDouble(4 * x);
+		d_FloorLine.SetDouble(8 * x);
 	}
-	*/
+	
 	return 0;
-
 
 };
