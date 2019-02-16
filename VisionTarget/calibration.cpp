@@ -15,7 +15,6 @@
 #include "GripPipeline.h"
 #include <string>
 #include <iostream>
-#include <fstream>
 #include "networktables/NetworkTable.h"
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
@@ -81,13 +80,9 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	cv::circle(drawing, cv::Point2f( (MinX+MaxX) / 2, (MinY+MaxY) / 2 ), 5, cv::Scalar(255,255,255));
 	if( save_image == true) 
 	{
-		std::cout <<  "Saving Image:" << std::endl;
-		cv::imwrite("/home/pi/RP_Vision_2019/Calibration/images/"+ std::to_string(counter) + ".jpg",source);
-		std::cout << "/home/pi/RP_Vision_2019/Calibration/images/"+ std::to_string(counter) + ".jpg" << std::endl;
-		std::ofstream myfile;
-		myfile.open ("/home/pi/RP_Vision_2019/Calibration/"+ std::to_string(counter) + ".txt");
-		myfile << "Width of Target: " + std::to_string(MaxX - MinY) + "\n";
-		myfile.close();
+			std::cout <<  "Saving Image:" << std::endl;
+		cv::imwrite("/home/pi/RP_Vision_2019/VisionTarget/images/"+ std::to_string(counter) + ".jpg",drawing);
+		std::cout << "/home/pi/RP_Vision_2019/VisionTarget/images/"+ std::to_string(counter) + ".jpg" << std::endl;
 		counter++;
 	}
 	save_image = false;
@@ -99,7 +94,7 @@ void command_input()
 {
 	std::string input_variable;
 	 while(true) {
-		//std::cout << "Input S to Save image" << std::endl;
+		std::cout << "Input S to Save image" << std::endl;
 		std::cin >>  input_variable;
 		if ( input_variable == "S" || input_variable == "s")
 		{
@@ -137,7 +132,6 @@ int main(){
 	auto inst = nt::NetworkTableInstance::GetDefault();
 	auto table = inst.GetTable("table");
   	
-	
   	while(allow_exit == false) {
  	 	cvSink.GrabFrame(source);
 		if ( source.rows > 0){
