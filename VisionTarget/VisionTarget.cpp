@@ -19,7 +19,41 @@
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
 
-//cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours,int counter)
+std::vector<std::vector<cv::Point>> lock_target(std::vector<std::vector<cv::Point>> contours)
+{
+	std::vector<std::vector<cv::Point>> output_contours;
+	int num_contours = contours.size();
+	int midpointBox [num_contours];
+	std::vector<cv::Rect> boundingBoxArray;
+	int minimum = 0;
+	int minimum2 = 0;
+	if(num_contours >=2){
+		for(int count = 0; count < num_contours; count++) {
+			boundingBoxArray[count] = cv::boundingRect(contours[count]);
+			int midx = ( (boundingBoxArray[count].tl()).x + (boundingBoxArray[count].br()).x ) / 2;
+			midpointBox[count] = midx;
+		}
+		int differenceMidpoints [num_contours];
+		for(int count = 0; count < num_contours; count++){
+			differenceMidpoints[count] = abs((width/2) - midpointBox[count]);
+		}
+		for(int count = 1; count < num_contours; count++){
+			if(differenceMidpoints[count] < differenceMidpoints[minimum]){
+				minimum = count;
+			}
+		}
+		for(int count = 1; count < num_contours; count++){
+			if(differenceMidpoints[count] > differenceMidpoints[minimum2] && differenceMidpoints[minimum2] > differenceMidpoints[count]){
+					minimum2 = count;
+			}
+		}
+	} else{
+		return contours;
+	}
+	output_contours.push_back(contours.at(minimum));
+	output_contours.push_back(contours.at(minimum2));
+	return output_contours;
+}
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
 	cv::Mat drawing = cv::Mat::zeros( source.size(), CV_8UC3 );
@@ -29,7 +63,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	{
 		return drawing;
 	}	
-	
+	contours = lock_target(contours);
 	cv::Point2f* topLeft;
 	cv::Point2f* bottomLeft;
 	cv::Point2f* topRight;
