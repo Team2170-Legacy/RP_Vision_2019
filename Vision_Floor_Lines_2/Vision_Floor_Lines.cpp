@@ -47,12 +47,13 @@ int main()
         std::vector<cv::Point> contour2;
 
         cv::Rect r1, r2;
-
+        cv::Point tl2;
         cv::Point tl1;
+        cv::Point br2;
         cv::Point br1;
 // read in image file
 //    Mat image; 
-    source = cv::imread("2019-02-02_10-30-20-233.png", CV_LOAD_IMAGE_COLOR);
+    source = cv::imread("2019-02-02_10-30-20-233-small.png", CV_LOAD_IMAGE_COLOR);
     
     if(! source.data )
     {
@@ -60,12 +61,11 @@ int main()
             return -1;
     }
   
- //       while(true) 
-  //      {
+        while(true) 
+        {
 
 
 //            cvSink.GrabFrame(source);
-
 //69
 //MK        output = source;
             if ( source.rows > 0)
@@ -81,14 +81,24 @@ int main()
 //                r2 = cv::boundingRect(contour2);
 
                 tl1 = r1.tl();
+                tl2 = r2.tl();
                 br1 = r1.br();
+                br2 = r2.br();
                 std::cout << "Top left of rectangle x: (" << tl1.x << ")" << std::endl;
                 std::cout << "Top left of rectangle y: (" << tl1.y << ")" << std::endl;
                 std::cout << "Bottom right of rectangle x: (" << br1.x << ")" << std::endl;
                 std::cout << "Bottom right of rectangle y: (" << br1.y << ")" << std::endl;
              //output_ptr = pipeline.GetCvApplycolormapOutput();
              //output = *output_ptr;
+                output = source;
+                cv::Scalar color = cv::Scalar(75,0,130); //BGR Dark As Fuk Purple
 
+//                tl1.x = 20;
+//                tl1.y = 20;
+//                br1.x = 60;
+//                br1.y = 60;
+                cv::rectangle(output, tl1, br1, color, 4, 8, 0);
+//                cv::rectangle(output, tl2, br2, color, 4, 8, 0);
 
              outputStreamStd.PutFrame(output);
 //MK        outputStreamStd.PutFrame(source);
@@ -98,7 +108,7 @@ int main()
  //       }
 
 
-//    }
+    }
 
 //    std::thread visionThread(VisionThread);
 
