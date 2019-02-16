@@ -18,6 +18,9 @@
 #include "networktables/NetworkTable.h"
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
+bool save_image;
+bool allow_exit;
+int counter = 0;
 
 //cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours,int counter)
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
@@ -75,10 +78,34 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	cv::line(drawing, *bottomRight, *topRight, cv::Scalar(255,255,255));
 	cv::line(drawing, *topRight, *topLeft, cv::Scalar(255,255,255));
 	cv::circle(drawing, cv::Point2f( (MinX+MaxX) / 2, (MinY+MaxY) / 2 ), 5, cv::Scalar(255,255,255));
+	if( save_image == true) 
+	{
+			std::cout <<  "Saving Image:" << std::endl;
+		cv::imwrite("/home/pi/RP_Vision_2019/VisionTarget/images/"+ std::to_string(counter) + ".jpg",drawing);
+		std::cout << "/home/pi/RP_Vision_2019/VisionTarget/images/"+ std::to_string(counter) + ".jpg" << std::endl;
+		counter++;
+	}
+	save_image = false;
+	
+	
 	return drawing;
+}
+void command_input()
+{
+	std::string input_variable;
+	 while(true) {
+		std::cout << "Input S to Save image" << std::endl;
+		std::cin >>  input_variable;
+		if ( input_variable == "S" || input_variable == "s")
+		{
+			//std::cout << "Setting Save image to true" << std::endl;
+			save_image = true;
+		}
+	 }
 }
 
 int main(){
+	std::thread console_thread(command_input);
 	grip::GripPipeline pipeline;
 	// camera setup
 	int cWidth = 320;
@@ -105,17 +132,28 @@ int main(){
 	auto inst = nt::NetworkTableInstance::GetDefault();
 	auto table = inst.GetTable("table");
   	
-  	while(true) {
+  	while(allow_exit == false) {
  	 	cvSink.GrabFrame(source);
 		if ( source.rows > 0){
 			pipeline.Process(source);
 			hsv_mat_ptr = pipeline.GetHsvThresholdOutput();
 			hsv_mat = *hsv_mat_ptr;
 			outputStreamStd.PutFrame(hsv_mat);
+			//std::string path = "~/RP_Vision_2019/VisionTarget/Image_" + std::to_string(counter) + ".png";
+			//std::cout <<  cv::imwrite( path , source) << std::endl;
+			// DO something with the contours from GRIP Pipeline now.
 			contours_ptr = pipeline.GetFilterContoursOutput();
 			contours = *contours_ptr;
+			//std::cout <<  contours.size() << std::endl;
+			//std::string path3 = "~/RP_Vision_2019/VisionTarget/Image_HSV" + std::to_string(counter) + ".png"; 
+			// DO something with the contours from GRIP Pipeline now.
+			//std::cout << cv::imwrite( path3 , hsv_mat) << std::endl; 
 			if(!contours.empty() ){
+
+				//std::cout <<  "Running Detect Rectangles:" << std::endl;
 				cv::Mat rect_output = detect_rectangles(source,contours);
+				//std::string path2 = "~/RP_Vision_2019/VisionTarget/Image_Rect_" + std::to_string(counter) + ".png"; 
+				//std::cout << cv::imwrite( path2 , rect_output) << std::endl;
 				outputStreamRectStd.PutFrame(rect_output);
 
 			}
@@ -123,8 +161,10 @@ int main(){
 			{
 				outputStreamRectStd.PutFrame(source);
 			}						
+			//counter++;
 		}        
 	}
+	 console_thread.join();
 	return 0;
 
 
