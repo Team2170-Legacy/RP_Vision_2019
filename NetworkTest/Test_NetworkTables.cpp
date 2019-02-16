@@ -4,6 +4,9 @@
 #include <cameraserver/CameraServer.h>
 #include <cameraserver/CameraServerShared.h>
 
+
+
+
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <opencv2/core/core.hpp>
@@ -23,12 +26,13 @@ int main()
 	// Create an object for network tables //
 	auto inst = nt::NetworkTableInstance::GetDefault();
 	std::cout<<"Network Table Created"<<std::endl;
-	inst.StartClient("169.254.204.129",port);
+	inst.StartClient("10.21.70.2",port);
 	std::cout<<"Network Table Started"<<std::endl;
 	//  Create a new table "visiontable"
 	auto table = inst.GetTable("visiontable");
 	// initial counters creation
 	nt::NetworkTableEntry e_Target =  table->GetEntry("e_Target");
+	nt::NetworkTableEntry target_distance =  table->GetEntry("e_Target");
 	// add one to x , 2 to y
 	double x = 0;
 	int seconds = 5;
@@ -36,9 +40,16 @@ int main()
 		x = 20;
 		e_Target.SetDouble(x);
 		std::this_thread::sleep_for (std::chrono::seconds(seconds));
+		std::cout << "Changed left" << std::endl;
 		x = -20;
 		e_Target.SetDouble(x);
 	 	std::this_thread::sleep_for (std::chrono::seconds(seconds));
+		std::cout << "Changed right" << std::endl;
+		
+		target_distance.SetDouble(x);
+		std::cout << "Distance" << std::endl;
+		std::this_thread::sleep_for (std::chrono::seconds(seconds));
+		target_distance.SetDouble(20);
 	}
 	return 0;
 
