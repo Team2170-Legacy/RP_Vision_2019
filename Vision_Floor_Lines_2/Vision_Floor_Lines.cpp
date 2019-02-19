@@ -99,13 +99,13 @@ int main()
                 int minimum = 0;
  //               boundingBoxArray[0] = cv::boundingRect(contours[0]);
 
-
                 for(int count = 0; count < num_contours; count++){        
                        boundingBoxArray.push_back(cv::boundingRect(contours[count]));
                         int midx = ( (boundingBoxArray[count].tl()).x + (boundingBoxArray[count].br()).x ) / 2;
                         int midy = ( (boundingBoxArray[count].tl()).y + (boundingBoxArray[count].br()).y ) / 2;
                        midpointBox[count] = midx;
                 }
+
                 int differenceMidpoint [num_contours];
                 for(int count = 0; count < num_contours; count++){
                         differenceMidpoint[count] = abs((width/2) - midpointBox[count]);
@@ -123,14 +123,35 @@ int main()
              //output_ptr = pipeline.GetCvApplycolormapOutput();
              //output = *output_ptr;
                 output = source;
-                cv::Scalar color = cv::Scalar(75,0,130); //BGR Dark As Fucc Purple
+                cv::Scalar color = cv::Scalar(0,0,255); //BGR Red Red
 
 //                tl1.x = 20;
 //                tl1.y = 20;
 //                br1.x = 60;
 //                br1.y = 60;
-                cv::rectangle(output, boundingBoxArray[minimum].tl(),boundingBoxArray[minimum].br(), color, 4, 8, 0);
+
+                int THICKNESS = 1;
+                cv::rectangle(output, boundingBoxArray[minimum].tl(),boundingBoxArray[minimum].br(), color, THICKNESS+3, 8, 0);
 //                cv::rectangle(output, tl2, br2, color, 4, 8, 0);
+
+
+                int midxr = ( (boundingBoxArray[minimum].tl()).x + (boundingBoxArray[minimum].br()).x ) / 2;
+                //Draw a THICC circle
+                cv::Point midpoint(midxr, ((boundingBoxArray[minimum].tl()).y));
+                cv::circle(output, midpoint, 5, color, THICKNESS, 8, 0);
+
+                cv::Scalar color2 = cv::Scalar(255,255,255);
+                if(num_contours > 1){
+                        for(int otherBox = 0; otherBox < num_contours; otherBox++){
+                                if(otherBox != minimum){
+                                        cv::rectangle(output, boundingBoxArray[otherBox].tl(), boundingBoxArray[otherBox].br(), color2, THICKNESS, 8, 0);
+                                }
+                        }
+                }
+
+                // for(int count = 0; count < num_contours; count++){
+                //         cv::circle(output, midpoint, 1, color)
+                // }
 
              outputStreamStd.PutFrame(output);
 //MK        outputStreamStd.PutFrame(source);
