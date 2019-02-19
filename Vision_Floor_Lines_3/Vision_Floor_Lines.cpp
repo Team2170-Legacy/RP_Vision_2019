@@ -53,21 +53,26 @@ int main()
         cv::Point br1;
 // read in image file
 //    Mat image; 
-    source = cv::imread("Test_Image", CV_LOAD_IMAGE_COLOR);
+
+//******    source = cv::imread("Test_Image", CV_LOAD_IMAGE_COLOR);
     
-    if(! source.data )
-    {
-            std::cout <<  "Could not open or find the image" << std::endl ;
-            return -1;
-    }
+    	uint64_t grab_Frame_Status = -1;
+
+//     if(! source.data )
+//     {
+//             std::cout <<  "Could not open or find the image" << std::endl ;
+//             return -1;
+//     }
   
         while(true) 
         {
+	grab_Frame_Status = cvSink.GrabFrame(source);
+//        std::cout << "Grab Frame Status: " << grab_Frame_Status << std::endl;
 
 
-//            cvSink.GrabFrame(source);
-//69
-//MK        output = source;
+
+
+        output = source;
             if ( source.rows > 0)
             {
 //**               cvtColor(source, output, cv::COLOR_BGR2GRAY);
@@ -153,15 +158,26 @@ int main()
                 //         cv::circle(output, midpoint, 1, color)
                 // }
 
-             outputStreamStd.PutFrame(output);
+
 //MK        outputStreamStd.PutFrame(source);
 
 //          std::this_thread::sleep_for (std::chrono::milliseconds(100));
-            }
+            }  // if ( source.rows > 0)
  //       }
 
+        //if ( output.rows > 0)
+        if(! source.data )
 
-    }
+                {
+                        //std::cout << "output.rows = 0...." << std::endl;
+                        std::cout << "! source.data is TRUE...." << std::endl;
+                }
+        else                                
+                outputStreamStd.PutFrame(output);
+
+                
+
+    } // while(true) 
 
 //    std::thread visionThread(VisionThread);
 
