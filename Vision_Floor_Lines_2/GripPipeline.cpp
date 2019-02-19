@@ -18,9 +18,9 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step HSV_Threshold0:
 	//input
 	cv::Mat hsvThresholdInput = resizeImageOutput;
-	double hsvThresholdHue[] = {45.32374100719424, 46.666666666666664};
-	double hsvThresholdSaturation[] = {2.293165467625899, 89.72222222222223};
-	double hsvThresholdValue[] = {252.24820143884892, 255.0};
+	double hsvThresholdHue[] = {0.0, 180.0};
+	double hsvThresholdSaturation[] = {0.0, 57.52525252525252};
+	double hsvThresholdValue[] = {248.5791366906475, 255.0};
 	hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, this->hsvThresholdOutput);
 	//Step Blur0:
 	//input
@@ -36,7 +36,7 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step Filter_Contours0:
 	//input
 	std::vector<std::vector<cv::Point> > filterContoursContours = findContoursOutput;
-	double filterContoursMinArea = 0.0;  // default Double
+	double filterContoursMinArea = 100.0;  // default Double
 	double filterContoursMinPerimeter = 0.0;  // default Double
 	double filterContoursMinWidth = 0.0;  // default Double
 	double filterContoursMaxWidth = 1000.0;  // default Double

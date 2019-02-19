@@ -95,6 +95,7 @@ int main()
  //               boundingBoxArray[1] = r1;
 
                 int num_contours = contours.size();
+                std::cout << "Number of counters = " << num_contours << std::endl;
                 int midpointBox [num_contours];
                 int minimum = 0;
  //               boundingBoxArray[0] = cv::boundingRect(contours[0]);
@@ -117,6 +118,7 @@ int main()
                 }
 
         {
+
                 std::cout <<"Minimum: (" << minimum << ")" << std::endl;
                 std::cout <<"Midpoint x: (" << midpointBox[minimum] << ")" <<std::endl; 
         }
