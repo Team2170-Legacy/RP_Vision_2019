@@ -1,0 +1,120 @@
+<grip:Pipeline>
+  <sources>
+    <grip:MultiImageFile>
+      <property name="path[9]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\9.jpg"/>
+      <property name="path[6]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\6.jpg"/>
+      <property name="path[3]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\3.jpg"/>
+      <property name="path[0]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\0.jpg"/>
+      <property name="path[8]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\8.jpg"/>
+      <property name="index" value="4"/>
+      <property name="numImages" value="10"/>
+      <property name="path[5]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\5.jpg"/>
+      <property name="path[2]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\2.jpg"/>
+      <property name="path[7]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\7.jpg"/>
+      <property name="path[4]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\4.jpg"/>
+      <property name="path[1]" value="C:\Users\Priyanshu\Documents\FRC_2019\GIT\Calibration_2019\Calibration Images_2019_02_16\calibrations_right\1.jpg"/>
+    </grip:MultiImageFile>
+  </sources>
+  <steps>
+    <grip:Step name="HSV Threshold">
+      <grip:Input step="0" socket="0"/>
+      <grip:Input step="0" socket="1">
+        <value>
+          <double>63.129496402877706</double>
+          <double>87.84982935153587</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="0" socket="2">
+        <value>
+          <double>100.89928057553956</double>
+          <double>255.0</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="0" socket="3">
+        <value>
+          <double>149.05575539568343</double>
+          <double>255.0</double>
+        </value>
+      </grip:Input>
+      <grip:Output step="0" socket="0" previewed="true"/>
+    </grip:Step>
+    <grip:Step name="Find Contours">
+      <grip:Input step="1" socket="0"/>
+      <grip:Input step="1" socket="1">
+        <value>false</value>
+      </grip:Input>
+      <grip:Output step="1" socket="0" previewed="false"/>
+    </grip:Step>
+    <grip:Step name="Filter Contours">
+      <grip:Input step="2" socket="0"/>
+      <grip:Input step="2" socket="1">
+        <value>30.0</value>
+      </grip:Input>
+      <grip:Input step="2" socket="2">
+        <value>0</value>
+      </grip:Input>
+      <grip:Input step="2" socket="3">
+        <value>0</value>
+      </grip:Input>
+      <grip:Input step="2" socket="4">
+        <value>1000</value>
+      </grip:Input>
+      <grip:Input step="2" socket="5">
+        <value>10.0</value>
+      </grip:Input>
+      <grip:Input step="2" socket="6">
+        <value>1000</value>
+      </grip:Input>
+      <grip:Input step="2" socket="7">
+        <value>
+          <int>0</int>
+          <double>100.0</double>
+        </value>
+      </grip:Input>
+      <grip:Input step="2" socket="8">
+        <value>1000000</value>
+      </grip:Input>
+      <grip:Input step="2" socket="9">
+        <value>4.0</value>
+      </grip:Input>
+      <grip:Input step="2" socket="10">
+        <value>0.1</value>
+      </grip:Input>
+      <grip:Input step="2" socket="11">
+        <value>0.9</value>
+      </grip:Input>
+      <grip:Output step="2" socket="0" previewed="true"/>
+    </grip:Step>
+  </steps>
+  <connections>
+    <grip:Connection>
+      <grip:Output source="0" socket="0" previewed="true"/>
+      <grip:Input step="0" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="0" socket="0" previewed="true"/>
+      <grip:Input step="1" socket="0"/>
+    </grip:Connection>
+    <grip:Connection>
+      <grip:Output step="1" socket="0" previewed="false"/>
+      <grip:Input step="2" socket="0"/>
+    </grip:Connection>
+  </connections>
+  <settings>
+    <teamNumber>0</teamNumber>
+    <publishAddress>roboRIO-0-FRC.local</publishAddress>
+    <deployAddress>roboRIO-0-FRC.local</deployAddress>
+    <deployDir>/home/lvuser</deployDir>
+    <deployUser>lvuser</deployUser>
+    <deployJavaHome>/usr/local/frc/JRE/</deployJavaHome>
+    <deployJvmOptions>-Xmx50m -XX:-OmitStackTraceInFastThrow -XX:+HeapDumpOnOutOfMemoryError -XX:MaxNewSize=16m</deployJvmOptions>
+  </settings>
+  <codeGenerationSettings>
+    <language>C++</language>
+    <className>GripPipeline</className>
+    <implementWpilibPipeline>false</implementWpilibPipeline>
+    <saveDir>C:\Users\Priyanshu\Documents\FRC_2019\Grip Stuff</saveDir>
+    <packageName></packageName>
+    <moduleName>grip</moduleName>
+  </codeGenerationSettings>
+</grip:Pipeline>
