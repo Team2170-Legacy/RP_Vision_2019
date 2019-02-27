@@ -54,6 +54,14 @@ int main()
         cv::Point br2;
         cv::Point br1;
 
+        #include "Distance.h"
+        Distance distance_calculator;
+
+        int target_y = 0;
+        int target_x = 0;
+        int target_error = 0;
+        int target_Distance = 0;
+
         uint64_t grab_Frame_Status = 0;
 
         //-------------------------------------------------------------------------------------------------------------
@@ -63,7 +71,7 @@ int main()
         //    Mat image;
         //source = cv::imread("Test_Image", CV_LOAD_IMAGE_COLOR);
         //grab_Frame_Status = 1;
-
+        //69
         //     if(! source.data )
         //     {
         //             std::cout <<  "Could not open or find the image" << std::endl ;
@@ -157,9 +165,12 @@ int main()
                                         cv::rectangle(output, boundingBoxArray[minimum].tl(), boundingBoxArray[minimum].br(), RED, THICKNESS_RED, 8, 0);
 
                                         int midxr = ((boundingBoxArray[minimum].tl()).x + (boundingBoxArray[minimum].br()).x) / 2;
-                                        //Draw a THICK circle
+                                        //Draw a THICC circle
                                         cv::Point midpoint(midxr, ((boundingBoxArray[minimum].tl()).y));
                                         cv::circle(output, midpoint, 5, RED, THICKNESS_RED, 8, 0);
+
+                                        target_x = midxr;
+                                        target_y = midpoint((boundingBoxArray[minimum].tl()).y);
 
                                         cv::Scalar WHITE = cv::Scalar(255, 255, 255);
                                         for (int otherBox = 0; otherBox < num_contours; otherBox++)
@@ -189,8 +200,15 @@ int main()
                         */
 
                         outputStreamStd.PutFrame(output);
-                        if (debug)
+
+                        target_error = target_x-(width/2);
+                        if (debug) 
                                 std::cout << "Streaming output frame...." << std::endl; 
+
+
+                        target_Distance = calc_Distance(target_y);
+                        
+                        
                 } // if(grab_Frame_Status > -1)
         } // while(true)
 
