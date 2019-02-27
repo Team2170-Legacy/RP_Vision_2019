@@ -72,6 +72,7 @@ std::vector<std::vector<cv::Point> >* GripPipeline::GetFilterContoursOutput(){
 		cv::inRange(out,cv::Scalar(hue[0], sat[0], val[0]), cv::Scalar(hue[1], sat[1], val[1]), out);
 	}
 
+
 	/**
 	 * Finds contours in an image.
 	 *
