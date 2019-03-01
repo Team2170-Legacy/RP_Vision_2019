@@ -21,7 +21,7 @@
 #include "networktables/NetworkTableInstance.h"
 
 // data about locked contours, updated whenever a target is locked on too
-int targetWidth = 0;
+double targetWidth = 0;
 int targetCenterX = 0;
 bool targetLocked = false;
 
@@ -77,7 +77,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	
 	if(updateLockedTargetData) {
 	 targetCenterX = ((MinX + MaxX) / 2);
-	 targetWidth = (MaxX - MinX);
+	 targetWidth = (double)(MaxX - MinX);
 	targetLocked = true;
 	}
 
@@ -156,6 +156,15 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 	return source;
 }
 
+// given a bounding box's width, calculates the distance from the targets in the bounding box
+double calcDistance(double width) {
+	double wTarget_px = 160;
+	double rTarget_px = width;
+	double F = (rTarget_px * 48)  / wTarget_px;
+	double distance = ( F * wTarget_px ) / rTarget_px;
+	return distance;
+}
+
 int main() {
 	grip::GripPipeline pipeline;
 	
@@ -206,6 +215,8 @@ int main() {
 			if(targetLocked = true) {
       nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
 	x_target_error.SetDouble(targetCenterX - (cWidth/2));
+	  nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
+	distance_to_target.SetDouble(calcDistance(targetWidth));
 	
 			}
 		}
