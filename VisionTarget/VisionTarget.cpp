@@ -20,13 +20,14 @@
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
 
+// data about locked contours, updated whenever a target is locked on too
+int targetWidth = 0;
+int targetCenterX = 0;
+bool targetLocked = false;
 
 
-//int x_target_error = 0;
-
-cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours, cv::Scalar color, int thickness)
+cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours, cv::Scalar color, int thickness, bool updateLockedTargetData)
 {
-	//cv::Mat drawing = cv::Mat::zeros(source.size(), CV_8UC3);
 
 	cv::Mat drawing = source;
 	if (contours.size() < 2)
@@ -38,19 +39,16 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	cv::Point2f* topRight;
 	cv::Point2f* bottomRight;
 	std::vector<std::vector<float>> bounding;
-//	std::cout << "checkpoint d1" << std::endl;
-	// compute the rotated bounding rect of the biggest contour! (this is the part that does what you want/need)
+
 	for (int c = 0; c < 2; c++)
 	{
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
-		// one thing to remark: this will compute the OUTER boundary box, so maybe you have to erode/dilate if you want something between the ragged lines
-		// draw the rotated rect
 		cv::Point2f corners[4];
 		boundingBox.points(corners);
-		cv::line(drawing, corners[0], corners[1], cv::Scalar(255, 255, 255), thickness);
-		cv::line(drawing, corners[1], corners[2], cv::Scalar(255, 255, 255), thickness);
-		cv::line(drawing, corners[2], corners[3], cv::Scalar(255, 255, 255), thickness);
-		cv::line(drawing, corners[3], corners[0], cv::Scalar(255, 255, 255), thickness);
+		cv::line(drawing, corners[0], corners[1], cv::Scalar(255, 255, 255));
+		cv::line(drawing, corners[1], corners[2], cv::Scalar(255, 255, 255));
+		cv::line(drawing, corners[2], corners[3], cv::Scalar(255, 255, 255));
+		cv::line(drawing, corners[3], corners[0], cv::Scalar(255, 255, 255));
 		float MinY = fminf(corners[0].y, fminf(corners[1].y, fminf(corners[2].y, corners[3].y)));
 		float MaxY = fmaxf(corners[0].y, fmaxf(corners[1].y, fmaxf(corners[2].y, corners[3].y)));
 		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
@@ -62,7 +60,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		tmp.push_back(MaxY);
 		bounding.push_back(tmp);
 	}
-//	std::cout << "checkpoint d2" << std::endl;
+
 	float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
 	float MaxX = fmaxf(bounding.at(0).at(1), bounding.at(1).at(1));
 	float MinY = fminf(bounding.at(0).at(2), bounding.at(1).at(2));
@@ -71,14 +69,18 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	bottomLeft = new cv::Point2f(MinX, MinY);
 	topRight = new cv::Point2f(MaxX, MaxY);
 	bottomRight = new cv::Point2f(MaxX, MinY);
-	cv::line(drawing, *topLeft, *bottomLeft, color);
-	cv::line(drawing, *bottomLeft, *bottomRight, color);
-	cv::line(drawing, *bottomRight, *topRight, color);
-	cv::line(drawing, *topRight, *topLeft, color);
+	cv::line(drawing, *topLeft, *bottomLeft, color, thickness);
+	cv::line(drawing, *bottomLeft, *bottomRight, color, thickness);
+	cv::line(drawing, *bottomRight, *topRight, color, thickness);
+	cv::line(drawing, *topRight, *topLeft, color, thickness);
 	cv::circle(drawing, cv::Point2f((MinX + MaxX) / 2, (MinY + MaxY) / 2), 5, cv::Scalar(255, 255, 255));
 	
+	if(updateLockedTargetData) {
+	 targetCenterX = ((MinX + MaxX) / 2);
+	 targetWidth = (MaxX - MinX);
+	targetLocked = true;
+	}
 
-//	std::cout << "checkpoint d3" << std::endl;
 
 	return drawing;
 }
@@ -86,70 +88,56 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours, int width)
 {
 	int num_contours = contours.size();
-//	std::cout << num_contours << std::endl;
 	int midpointBox[num_contours];
 	std::vector<cv::Rect> boundingBoxArray;
 	int minimum = 0;
 	int minimum2 = 0;
 	if (num_contours >= 2) 
 	{
-//	std::cout << "multiple contours detected" << std::endl;
+
 
 		for (int count = 0; count < num_contours; count++) {
 			cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
-			// one thing to remark: this will compute the OUTER boundary box, so maybe you have to erode/dilate if you want something between the ragged lines
-			// draw the rotated rect
 			cv::Point2f corners[4];
 			boundingBox.points(corners);
-//std::cout << "checkpoint1" << std::endl;
-
 			float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
 			float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
 			int midx = (MinX + MaxX) / 2;
 			midpointBox[count] = midx;
 		}
-		//std::cout << "checkpoint2" << std::endl;
+		
 		int differenceMidpoints[num_contours];
 		for (int count = 0; count < num_contours; count++) {
 			differenceMidpoints[count] = abs((width / 2) - midpointBox[count]);
 		}
+
 		for (int count = 1; count < num_contours; count++) {
 			if (differenceMidpoints[count] < differenceMidpoints[minimum]) 
 				minimum = count;
 			}
-//std::cout << "checkpoint3" << std::endl;
+
 			for (int count = 1; count < num_contours; count++) {
-				//if (differenceMidpoints[count] > differenceMidpoints[minimum] && differenceMidpoints[minimum2] > differenceMidpoints[count]) {
 				if (differenceMidpoints[minimum2] > differenceMidpoints[count] && count != minimum)
-				//std::cout << "setting minimum2" << std::endl;
 					minimum2 = count;
-				
-		//	}
 
 		
 	}
-	//std::cout << "checkpoint4" << std::endl; 
 	}
 	else {
 		return source;
 	}
 	if (num_contours > 2) {
 		for (int count = 0; count < num_contours - 1; count += 2) {
-			//std::cout << count << std::endl;
-			//std::cout << "==count" << std::endl;
-			//std::cout << num_contours << std::endl;
 				std::vector<std::vector<cv::Point>> all_contours;
 				all_contours.push_back(contours.at(count));
 				all_contours.push_back(contours.at(count + 1));
-				//std::cout << "about to detect rectangles1" << std::endl;
-				source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1);
+				source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1, false);
 			
 		}
 		std::vector<std::vector<cv::Point>> center_contours;
 		center_contours.push_back(contours.at(minimum));
 		center_contours.push_back(contours.at(minimum2));
-	//	std::cout << "about to detect rectangles2" << std::endl;
-		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4);
+		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
 		
 	}
 	else if (num_contours == 2)
@@ -157,23 +145,23 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		std::vector<std::vector<cv::Point>> center_contours;
 		center_contours.push_back(contours.at(0));
 		center_contours.push_back(contours.at(1));
-	//	std::cout << "about to detect rectangles3" << std::endl;
-		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4);
+		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
 	}
 	else {
-	//	std::cout << "checkpoint6" << std::endl;
+
+	targetLocked = false;
 		return source;
 	}
-//	std::cout << "checkpoint5" << std::endl;
 
 	return source;
 }
 
 int main() {
 	grip::GripPipeline pipeline;
+	
 	// camera setup
 	int cWidth = 320;
-int cHeight = 240;
+    int cHeight = 240;
 	int cExposure = 2;
 	int cWhiteBalance = 5100;
 	cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
@@ -190,17 +178,15 @@ int cHeight = 240;
 	cv::Mat hsv_mat;
 	std::vector<std::vector<cv::Point> >* contours_ptr;
 	std::vector<std::vector<cv::Point> > contours;
+
 	//network tables setup
-	nt::NetworkTableEntry entry;
 	auto inst = nt::NetworkTableInstance::GetDefault();
 	auto table = inst.GetTable("table");
 	while (true) {
 		cvSink.GrabFrame(source);
 		if (source.rows > 0) {
-			outputStreamRectStd.PutFrame(source);
-		//	std::cout << "About to Process" << std::endl;
+		// outputStreamRectStd.PutFrame(source);
 			pipeline.Process(source);
-		//	std::cout << "Processed" << std::endl;
 			hsv_mat_ptr = pipeline.GetHsvThresholdOutput();
 			hsv_mat = *hsv_mat_ptr;
 			outputStreamStd.PutFrame(hsv_mat);
@@ -213,7 +199,14 @@ int cHeight = 240;
 			}
 			else
 			{
-				
+				targetLocked = false;
+				outputStreamRectStd.PutFrame(source);
+			}
+
+			if(targetLocked = true) {
+      nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
+	x_target_error.SetDouble(targetCenterX - (cWidth/2));
+	
 			}
 		}
 	}
