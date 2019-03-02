@@ -12,7 +12,8 @@
 #include <chrono>
 
 //160x180 (small)
-static double distances[4] = {3, 1, 2, 0};
-static double small_yCoord[4] = {115.0, 69.2, 37.5, 14.2};
-static double medium_yCoord[4] = {230.0, 138.3, 75.0, 28.3};
-static double big_yCoord[4] = {690.0, 415.0, 225.0, 85.0};
+
+double distances[] = {3.0, 1.0, 2.0, 0.0};
+double small_yCoord[] = {115.0, 69.2, 37.5, 14.2};
+double medium_yCoord[] = {230.0, 138.3, 75.0, 28.3};
+double big_yCoord[] = {690.0, 415.0, 225.0, 85.0};
