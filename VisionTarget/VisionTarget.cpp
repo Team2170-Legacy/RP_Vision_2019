@@ -158,11 +158,39 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 
 // given a bounding box's width, calculates the distance from the targets in the bounding box
 double calcDistance(double width) {
+
+
+/* // non functional code
 	double wTarget_px = 160;
 	double rTarget_px = width;
 	double F = (rTarget_px * 48)  / wTarget_px;
 	double distance = ( F * wTarget_px ) / rTarget_px;
 	return distance;
+*/
+
+// widths[0] is width at 10ft away, widths[1] is 9ft away, widths[2] is 8ft away, ... till width[9] is 1 ft away
+	int widths [10] = {44, 48, 53, 62, 68, 80, 96, 128, 150, 180};
+	double minDifference = 1000;
+	int minDiffIndex;
+	for(int i = 0; i<10; i++) 
+	{
+   double difference = widths[i] - width;
+	 if(difference < 0)
+	 difference = -difference;
+if(difference < minDifference) 
+{
+minDiffIndex = i;
+minDifference = difference;
+}
+	}
+	// to nearest foot
+	double estimatedDistance = (double)(10 - minDiffIndex);
+	// if we are one foot away or less find more precise number
+	if(estimatedDistance==1) {
+		 int widthAt0Feet = 320;
+		estimatedDistance = (1 - ((width-180)/(widthAt0Feet-180)));
+	}
+	return estimatedDistance*12;
 }
 
 int main() {
