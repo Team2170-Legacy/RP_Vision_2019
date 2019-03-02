@@ -190,7 +190,7 @@ minDifference = difference;
 		 int widthAt0Feet = 320;
 		estimatedDistance = (1 - ((width-180)/(widthAt0Feet-180)));
 	}
-	return estimatedDistance*12;
+	return estimatedDistance;
 }
 
 int main() {
@@ -217,8 +217,13 @@ int main() {
 	std::vector<std::vector<cv::Point> > contours;
 
 	//network tables setup
+	unsigned int port = 1735;
 	auto inst = nt::NetworkTableInstance::GetDefault();
-	auto table = inst.GetTable("table");
+	inst.StartServer("169.254.247.86");
+	std::cout << "server started" << std::endl;
+	inst.StartClient("169.254.160.228",port);
+	auto table = inst.GetTable("VisionTable");
+	
 	while (true) {
 		cvSink.GrabFrame(source);
 		if (source.rows > 0) {
@@ -245,6 +250,7 @@ int main() {
 	x_target_error.SetDouble(targetCenterX - (cWidth/2));
 	  nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
 	distance_to_target.SetDouble(calcDistance(targetWidth));
+	//std::cout << calcDistance(targetWidth) << std::endl;
 	
 			}
 		}
