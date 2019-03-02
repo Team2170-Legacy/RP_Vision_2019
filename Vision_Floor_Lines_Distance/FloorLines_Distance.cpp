@@ -16,14 +16,15 @@
 double calc_Distance(double yCoord, double yCoordArr[]){
 	int arrSize = sizeof(yCoordArr);
 	double distance = 0;
-	if(yCoord > yCoordArr[0] && yCoord < yCoordArr[arrSize - 1]){
+	if(yCoord > yCoordArr[0] || yCoord < yCoordArr[arrSize - 1]){
 		//too far or too close
 		return -1;
 	}
 	for(int i = 0; i < arrSize -1; i++){
-		// Search from longest distance (lowest y) to shortest distance (highest y)
-		if(yCoord > yCoordArr[i] && yCoord < yCoordArr[i + 1]){ //yCoordArr goes in order, distance is flipped
-			distance = ((yCoordArr[i +1] - yCoord)/(yCoordArr[i+1] - yCoordArr[i]))*(distances[i] - distances[i+1]) + distances[i+1];
+		// Search from highest distance to lowest distance
+		// As index increases, distance increases and y-coordinates decrease
+		if(yCoord < yCoordArr[i] && yCoord > yCoordArr[i + 1]){ 
+			distance = ((yCoord - yCoordArr[i+1])/*How much over in percentage*//(yCoordArr[i] - yCoordArr[i+1]))*(distances[i+1] - distances[i])/*finds distance over*/ + distances[i+1]/*distance before*/;
 		}
 	}
 	return distance;
