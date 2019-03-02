@@ -12,6 +12,9 @@
 #include <chrono>
 
 #include "GripPipeline.h"
+#include "networktables/NetworkTable.h"
+#include "networktables/NetworkTableEntry.h"
+#include "networktables/NetworkTableInstance.h"
 class Distance{
     public:
     float calc_Distance(int y) 
@@ -215,8 +218,21 @@ int main()
                                 std::cout << "Streaming output frame...." << std::endl; 
                         
                         
-                        target_Distance =distance_calculator.calc_Distance(target_y);
+                        target_Distance = distance_calculator.calc_Distance(target_y);
                         
+                        auto inst = nt::NetworkTableInstance::GetDefault();
+	auto table = inst.GetTable("table");
+        
+        if(target_lock = true) {
+      nt::NetworkTableEntry fl_target_error =  table->GetEntry("fl_target_error");
+	fl_target_error.SetDouble(target_x - (width/2));
+	  nt::NetworkTableEntry fl_target_Distance_nt =  table->GetEntry("fl_target_Distance");
+	fl_target_Distance_nt.SetDouble(target_Distance);
+	
+        nt::NetworkTableEntry fl_target_lock = table->GetEntry("fl_target_lock");
+        fl_target_lock.SetDouble(target_lock);
+			}
+	
                         
                         
                 } // if(grab_Frame_Status > -1)

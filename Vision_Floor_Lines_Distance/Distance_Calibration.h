@@ -13,7 +13,9 @@
 
 //160x180 (small)
 
-double distances[] = {3.0, 1.0, 2.0, 0.0};
+// As index increases, distance increases and y-coordinates decrease
+int table_size = 4;
+double distances[] = {0, 1, 2, 3};
 double small_yCoord[] = {115.0, 69.2, 37.5, 14.2};
 double medium_yCoord[] = {230.0, 138.3, 75.0, 28.3};
 double big_yCoord[] = {690.0, 415.0, 225.0, 85.0};
