@@ -25,6 +25,16 @@ double targetWidth = 0;
 int targetCenterX = 0;
 bool targetLocked = false;
 
+/*
+void write_log(string message)
+{
+	// Open and write the message to a file using input output operations 
+	std::ofstream myfile;
+		fs.open ("/home/pi/RP_Vision_2019/VisionTarget/Log.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+		myfile << message + "\n";
+		myfile.close();
+}
+*/
 
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours, cv::Scalar color, int thickness, bool updateLockedTargetData)
 {
@@ -157,40 +167,57 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 }
 
 // given a bounding box's width, calculates the distance from the targets in the bounding box
+/*
 double calcDistance(double width) {
+double estimatedDistance = 10;
+// widths[0] is width at 10ft away, widths[1] is 9ft away, widths[2] is 8ft away, ... till width[9] is 1 ft away
 
+	int index;
+	for(int i = 9; i>=0; i--) 
+	{
+		if(width>widths[i]) {
+			index = i;
+		break;
+		}
+	}
+	write_log("index " + index);
+	if(index!=0) {
+int difference = widths[index]-widths[index-1];
+double decimal = (width-widths[index-1])/(difference);
+ estimatedDistance = (10 - (index + decimal));
+ 	write_log("estimate " + estimatedDistance);
+	}
+	else {
+	return estimatedDistance;
+}
 
-/* // non functional code
-	double wTarget_px = 160;
-	double rTarget_px = width;
-	double F = (rTarget_px * 48)  / wTarget_px;
-	double distance = ( F * wTarget_px ) / rTarget_px;
-	return distance;
+	return estimatedDistance;
+}
 */
 
-// widths[0] is width at 10ft away, widths[1] is 9ft away, widths[2] is 8ft away, ... till width[9] is 1 ft away
-	int widths [10] = {44, 48, 53, 62, 68, 80, 96, 128, 150, 180};
-	double minDifference = 1000;
-	int minDiffIndex;
-	for(int i = 0; i<10; i++) 
-	{
-   double difference = widths[i] - width;
-	 if(difference < 0)
-	 difference = -difference;
-if(difference < minDifference) 
-{
-minDiffIndex = i;
-minDifference = difference;
-}
+double calcDistance(double width){
+		double yCoordArr [11] = {44, 48, 53, 62, 68, 80, 96, 128, 150, 180, 320};
+		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
+		double yCoord = width;
+	int arrSize = 11;
+	double distance = 0;
+	if( yCoord > yCoordArr[arrSize - 1]){
+		//too close
+		return 0;
 	}
-	// to nearest foot
-	double estimatedDistance = (double)(10 - minDiffIndex);
-	// if we are one foot away or less find more precise number
-	if(estimatedDistance==1) {
-		 int widthAt0Feet = 320;
-		estimatedDistance = (1 - ((width-180)/(widthAt0Feet-180)));
+		if( yCoord < yCoordArr[0]){
+		return 10;
 	}
-	return estimatedDistance;
+
+	for(int i = 0; i < arrSize -1; i++){
+		// Search from longest distance (lowest y) to shortest distance (highest y)
+		if(yCoord > yCoordArr[i] && yCoord < yCoordArr[i + 1]){ //yCoordArr goes in order, distance is flipped
+			distance = ((yCoordArr[i +1] - yCoord)/(yCoordArr[i+1] - yCoordArr[i]))*(distances[i] - distances[i+1]) + distances[i+1];
+		}
+	}
+	return distance;
+
+
 }
 
 int main() {
@@ -244,14 +271,20 @@ int main() {
 				targetLocked = false;
 				outputStreamRectStd.PutFrame(source);
 			}
-
+  nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
+ nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
+ target_locked.SetBoolean(targetLocked);
 			if(targetLocked = true) {
-      nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
+    
 	x_target_error.SetDouble(targetCenterX - (cWidth/2));
 	  nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
 	distance_to_target.SetDouble(calcDistance(targetWidth));
 	//std::cout << calcDistance(targetWidth) << std::endl;
 	
+			}
+			else {
+				x_target_error.SetDouble(0);
+
 			}
 		}
 	}
