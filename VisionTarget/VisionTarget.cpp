@@ -22,6 +22,7 @@
 
 // data about locked contours, updated whenever a target is locked on too
 double targetWidth = 0;
+double targetHeight = 0;
 int targetCenterX = 0;
 bool targetLocked = false;
 
@@ -88,6 +89,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	if(updateLockedTargetData) {
 	 targetCenterX = ((MinX + MaxX) / 2);
 	 targetWidth = (double)(MaxX - MinX);
+	  targetHeight = (double)(MaxY - MinY);
 	targetLocked = true;
 	}
 
@@ -166,39 +168,11 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 	return source;
 }
 
-// given a bounding box's width, calculates the distance from the targets in the bounding box
-/*
-double calcDistance(double width) {
-double estimatedDistance = 10;
-// widths[0] is width at 10ft away, widths[1] is 9ft away, widths[2] is 8ft away, ... till width[9] is 1 ft away
 
-	int index;
-	for(int i = 9; i>=0; i--) 
-	{
-		if(width>widths[i]) {
-			index = i;
-		break;
-		}
-	}
-	write_log("index " + index);
-	if(index!=0) {
-int difference = widths[index]-widths[index-1];
-double decimal = (width-widths[index-1])/(difference);
- estimatedDistance = (10 - (index + decimal));
- 	write_log("estimate " + estimatedDistance);
-	}
-	else {
-	return estimatedDistance;
-}
-
-	return estimatedDistance;
-}
-*/
-
-double calcDistance(double width){
-		double yCoordArr [11] = {44, 48, 53, 62, 68, 80, 96, 128, 150, 180, 320};
+double calcDistance(double height){
+		double yCoordArr [11] = {20, 22, 24, 27, 30, 36, 43, 55, 62, 70, 134};
 		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
-		double yCoord = width;
+		double yCoord = height;
 	int arrSize = 11;
 	double distance = 0;
 	if( yCoord > yCoordArr[arrSize - 1]){
@@ -246,9 +220,9 @@ int main() {
 	//network tables setup
 	unsigned int port = 1735;
 	auto inst = nt::NetworkTableInstance::GetDefault();
-	inst.StartServer("169.254.247.86");
+	//inst.StartServer("10.21.70.2");
 	std::cout << "server started" << std::endl;
-	inst.StartClient("169.254.160.228",port);
+	inst.StartClient("10.21.70.2",port);
 	auto table = inst.GetTable("VisionTable");
 	
 	while (true) {
@@ -278,7 +252,8 @@ int main() {
     
 	x_target_error.SetDouble(targetCenterX - (cWidth/2));
 	  nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
-	distance_to_target.SetDouble(calcDistance(targetWidth));
+	distance_to_target.SetDouble(calcDistance(targetHeight));
+	
 	//std::cout << calcDistance(targetWidth) << std::endl;
 	
 			}
