@@ -12,6 +12,14 @@
 #include <chrono>
 
 #include "GripPipeline.h"
+class Distance{
+    public:
+    float calc_Distance(int y) 
+    {
+        return 2.33;
+    }
+};
+
 
 int main()
 
@@ -54,9 +62,9 @@ int main()
         cv::Point br2;
         cv::Point br1;
 
-        #include "Distance.h"
+        //#include "Distance.h"
         Distance distance_calculator;
-
+        bool target_lock;
         int target_y = 0;
         int target_x = 0;
         int target_error = 0;
@@ -81,6 +89,7 @@ int main()
 
         while (true) // loop forever
         {
+                target_lock = false;
                 grab_Frame_Status = cvSink.GrabFrame(source);
                 if (debug)
                         std::cout << "Grab Frame Status: " << grab_Frame_Status << std::endl;
@@ -163,15 +172,15 @@ int main()
                                         int THICKNESS_WHITE     = 1;
                                         int THICKNESS_RED       = 4;
                                         cv::rectangle(output, boundingBoxArray[minimum].tl(), boundingBoxArray[minimum].br(), RED, THICKNESS_RED, 8, 0);
-
+                                        target_lock = true;
                                         int midxr = ((boundingBoxArray[minimum].tl()).x + (boundingBoxArray[minimum].br()).x) / 2;
                                         //Draw a THICC circle
                                         cv::Point midpoint(midxr, ((boundingBoxArray[minimum].tl()).y));
                                         cv::circle(output, midpoint, 5, RED, THICKNESS_RED, 8, 0);
 
                                         target_x = midxr;
-                                        target_y = midpoint((boundingBoxArray[minimum].tl()).y);
-
+                                        target_y = ((boundingBoxArray[minimum].tl()).y);
+                                         
                                         cv::Scalar WHITE = cv::Scalar(255, 255, 255);
                                         for (int otherBox = 0; otherBox < num_contours; otherBox++)
                                         {
@@ -204,9 +213,10 @@ int main()
                         target_error = target_x-(width/2);
                         if (debug) 
                                 std::cout << "Streaming output frame...." << std::endl; 
-
-
-                        target_Distance = calc_Distance(target_y);
+                        
+                        
+                        target_Distance =distance_calculator.calc_Distance(target_y);
+                        
                         
                         
                 } // if(grab_Frame_Status > -1)
