@@ -13,14 +13,14 @@
 
 #include "Distance_Calibration.h"
 
-double calc_Distance(double yCoord, double yCoordArr[]){
-	int arrSize = sizeof(yCoordArr);
+double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
+	int arrSize = hArrSize;
 	double distance = 0;
-	if(yCoord > yCoordArr[0] || yCoord < yCoordArr[arrSize - 1]){
-		//too far or too close
+	if(yCoord > yCoordArr[0] || yCoord < yCoordArr[arrSize]){
+		//too far or too close  
 		return -1;
 	}
-	for(int i = 0; i < arrSize -1; i++){
+	for(int i = 0; i < arrSize; i++){
 		// Search from highest distance to lowest distance
 		// As index increases, distance increases and y-coordinates decrease
 		if(yCoord < yCoordArr[i] && yCoord > yCoordArr[i + 1]){ 
@@ -36,7 +36,7 @@ int main()
 {
 
 
-    std::cout << calc_Distance(60, small_yCoord) << std::endl;
+    std::cout << calc_Distance(60, small_yCoord, table_size) << std::endl;
 
     //std::cout << calc_Distance(-100, small_yCoord) << std::endl;
     
