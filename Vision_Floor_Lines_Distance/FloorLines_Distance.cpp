@@ -15,8 +15,8 @@
 
 double calc_Distance(double yCoord, double yCoordArr[]){
 	int arrSize = sizeof(yCoordArr);
-	double distance;
-	if(yCoord < yCoordArr[0] && yCoord > yCoordArr[arrSize - 1]){
+	double distance = 0;
+	if(yCoord > yCoordArr[0] && yCoord < yCoordArr[arrSize - 1]){
 		//too far or too close
 		return -1;
 	}
