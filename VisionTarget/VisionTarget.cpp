@@ -263,7 +263,9 @@ int main() {
 			{
 				targetLocked = false;
 				outputStreamRectStd.PutFrame(source);
-					x_target_error.SetDouble(0);
+				x_target_error.SetDouble(0);
+				//left_tape_height.SetDouble(0);
+				//right_tape_height.SetDouble(0);
 			}
   
  nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
@@ -282,6 +284,8 @@ int main() {
 			}
 			else {
 				x_target_error.SetDouble(0);
+				//left_tape_height.SetDouble(0);
+				//right_tape_height.SetDouble(0);
 			}
 
 			
