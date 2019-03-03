@@ -25,8 +25,8 @@ double targetWidth = 0; // width of bounding box of locked vision targets
 double targetHeight = 0; // height of bounding box of locked vision targets
 int targetCenterX = 0; // x value of center coordinate of bounding box around locked vision targets
 bool targetLocked = false; // whether or not a target is currently locked
-float leftTapeHeight = 0; // height of left tape in locked target
-float rightTapeHeight = 0; // height of right tape in locked target
+double leftTapeHeight = 0; // height of left tape in locked target
+double rightTapeHeight = 0; // height of right tape in locked target
 
 
 /*
@@ -55,7 +55,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	std::vector<std::vector<float>> bounding;
 
 
-float contourHeights [2] = {0 , 0};
+double contourHeights [2] = {0 , 0};
 float contourMinXs [2] = {0 , 0};
 	for (int c = 0; c < 2; c++)
 	{
@@ -70,7 +70,7 @@ float contourMinXs [2] = {0 , 0};
 		float MaxY = fmaxf(corners[0].y, fmaxf(corners[1].y, fmaxf(corners[2].y, corners[3].y)));
 		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
 		float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
-		contourHeights[c] = MaxY - MinY;
+		contourHeights[c] = (double)(MaxY - MinY);
 		contourMinXs [c] = MinX;
 		std::vector<float> tmp;
 		tmp.push_back(MinX);
@@ -194,6 +194,8 @@ double calcDistance(double height){
 	double distance = 0;
 	if( yCoord > yCoordArr[arrSize - 1]){
 		//too close
+	 std::cout << "Robot To Close, Height:" << std::endl;
+	 std::cout << height << std::endl;
 		return 0;
 	}
 		if( yCoord < yCoordArr[0]){
@@ -241,7 +243,7 @@ int main() {
 	std::cout << "server started" << std::endl;
 	inst.StartClient("10.21.70.2",port);
 	auto table = inst.GetTable("VisionTable");
-	
+	nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
 	while (true) {
 		cvSink.GrabFrame(source);
 		if (source.rows > 0) {
@@ -261,23 +263,28 @@ int main() {
 			{
 				targetLocked = false;
 				outputStreamRectStd.PutFrame(source);
+					x_target_error.SetDouble(0);
 			}
-  nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
+  
  nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
  target_locked.SetBoolean(targetLocked);
-			if(targetLocked = true) {
+			if(targetLocked) {
     
 	x_target_error.SetDouble(targetCenterX - (cWidth/2));
 	  nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
 	distance_to_target.SetDouble(calcDistance(targetHeight));
-	
+	nt::NetworkTableEntry left_tape_height =  table->GetEntry("left_tape_height");
+	nt::NetworkTableEntry right_tape_height =  table->GetEntry("right_tape_height");
+	left_tape_height.SetDouble(leftTapeHeight);
+	right_tape_height.SetDouble(rightTapeHeight);
 	//std::cout << calcDistance(targetWidth) << std::endl;
 	
 			}
 			else {
 				x_target_error.SetDouble(0);
-
 			}
+
+			
 		}
 	}
 	
