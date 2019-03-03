@@ -21,10 +21,13 @@
 #include "networktables/NetworkTableInstance.h"
 
 // data about locked contours, updated whenever a target is locked on too
-double targetWidth = 0;
-double targetHeight = 0;
-int targetCenterX = 0;
-bool targetLocked = false;
+double targetWidth = 0; // width of bounding box of locked vision targets
+double targetHeight = 0; // height of bounding box of locked vision targets
+int targetCenterX = 0; // x value of center coordinate of bounding box around locked vision targets
+bool targetLocked = false; // whether or not a target is currently locked
+float leftTapeHeight = 0; // height of left tape in locked target
+float rightTapeHeight = 0; // height of right tape in locked target
+
 
 /*
 void write_log(string message)
@@ -51,6 +54,9 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	cv::Point2f* bottomRight;
 	std::vector<std::vector<float>> bounding;
 
+
+float contourHeights [2] = {0 , 0};
+float contourMinXs [2] = {0 , 0};
 	for (int c = 0; c < 2; c++)
 	{
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
@@ -64,6 +70,8 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		float MaxY = fmaxf(corners[0].y, fmaxf(corners[1].y, fmaxf(corners[2].y, corners[3].y)));
 		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
 		float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
+		contourHeights[c] = MaxY - MinY;
+		contourMinXs [c] = MinX;
 		std::vector<float> tmp;
 		tmp.push_back(MinX);
 		tmp.push_back(MaxX);
@@ -71,7 +79,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		tmp.push_back(MaxY);
 		bounding.push_back(tmp);
 	}
-
+	
 	float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
 	float MaxX = fmaxf(bounding.at(0).at(1), bounding.at(1).at(1));
 	float MinY = fminf(bounding.at(0).at(2), bounding.at(1).at(2));
@@ -89,8 +97,17 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	if(updateLockedTargetData) {
 	 targetCenterX = ((MinX + MaxX) / 2);
 	 targetWidth = (double)(MaxX - MinX);
-	  targetHeight = (double)(MaxY - MinY);
-	targetLocked = true;
+	 targetHeight = (double)(MaxY - MinY);
+	 targetLocked = true;
+	if(contourMinXs[0]<contourMinXs[1]) {
+	leftTapeHeight = contourHeights[0];
+	rightTapeHeight = contourHeights[1];
+	}
+	else {
+		leftTapeHeight = contourHeights[1];
+	rightTapeHeight = contourHeights[0];
+	}
+
 	}
 
 
@@ -168,7 +185,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 	return source;
 }
 
-
+// given height of the bounding box of a locked target calulates the distance in feet the robot is away from the target
 double calcDistance(double height){
 		double yCoordArr [11] = {20, 22, 24, 27, 30, 36, 43, 55, 62, 70, 134};
 		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
