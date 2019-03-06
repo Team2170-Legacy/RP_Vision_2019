@@ -15,8 +15,6 @@
 #include "networktables/NetworkTable.h"
 #include "networktables/NetworkTableEntry.h"
 #include "networktables/NetworkTableInstance.h"
-
-
 /*class Distance{
     public:
     float calc_Distance(int y) 
@@ -25,8 +23,6 @@
     }
 };
 */
-
-//-----------------------------------------------------------------------------------------------------------
 // As index increases, distance increases and y-coordinates decrease
 int table_size = 4;
 double distances[] = {0, 1, 2, 3};
@@ -34,7 +30,6 @@ double small_yCoord[] = {115.0, 69.2, 37.5, 14.2};
 double medium_yCoord[] = {230.0, 138.3, 75.0, 28.3};
 double big_yCoord[] = {690.0, 415.0, 225.0, 85.0};
 
-//-----------------------------------------------------------------------------------------------------------
 double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 	int arrSize = hArrSize;
 	double distance = 0;
@@ -55,7 +50,7 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 }
 
 
-//-----------------------------------------------------------------------------------------------------------
+
 double calc_Angle(int xt, int yt, int xb, int yb){
     double angle;
 
@@ -72,9 +67,8 @@ double calc_Angle(int xt, int yt, int xb, int yb){
     return angle;
 }
 
-//-----------------------------------------------------------------------------------------------------------
 int main()
-
+//69
 {
         //    static void VisionThread()
 
@@ -82,22 +76,30 @@ int main()
 
         int debug = 1;          // debug flag, set 1 when additional output requested to console output
 
-        int width       = 320;        //160;
-        int height      = 240;       // 120;
-
         grip::GripPipeline pipeline;
+
         cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
 
+        int width = 160;
+        int height = 120;
         camera.SetResolution(width, height);
+
         cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
+
         cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Floorlines", width, height);
 
         cv::Mat source;
+
         cv::Mat output;
+
         cv::Mat *output_ptr;
+
         std::vector<std::vector<cv::Point>> *contours_ptr;
+
         std::vector<std::vector<cv::Point>> contours;
+
         std::vector<cv::Point> contour1;
+
         std::vector<cv::Point> contour2;
 
         cv::Rect r1, r2;
@@ -108,35 +110,29 @@ int main()
 
         //#include "Distance.h"
         
-        bool            target_lock = false;
-        int             target_y = 0;
-        int             target_x = 0;
-        int             target_error = 0;
-        int             target_Distance = 0;
-        double          target_angle = 0;
-        uint64_t        grab_Frame_Status = 0;
+        bool target_lock;
+        int target_y = 0;
+        int target_x = 0;
+        int target_error = 0;
+        int target_Distance = 0;
+        double target_angle = 0;
+        uint64_t grab_Frame_Status = 0;
 
         //-------------------------------------------------------------------------------------------------------------
-        //network tables setup
+        //      For testing purposes
+        //
+        // read in image file
+        //    Mat image;
+        //source = cv::imread("Test_Image", CV_LOAD_IMAGE_COLOR);
+        //grab_Frame_Status = 1;
+        //
+        //     if(! source.data )
+        //     {
+        //             std::cout <<  "Could not open or find the image" << std::endl ;
+        //             return -1;
+        //     }
+        //-------------------------------------------------------------------------------------------------------------
 
-	unsigned int port = 1735;
-	auto inst = nt::NetworkTableInstance::GetDefault();
-	//inst.StartServer("10.21.70.2");
-	std::cout << "server started" << std::endl;
-	inst.StartClient("10.21.70.2",port);
-	auto table = inst.GetTable("VisionTable");
-
-        nt::NetworkTableEntry fl_target_error           = table->GetEntry("fl_target_error");
-        nt::NetworkTableEntry fl_target_Distance_nt     = table->GetEntry("fl_target_Distance");
-        nt::NetworkTableEntry fl_target_lock            = table->GetEntry("fl_target_lock");
-        nt::NetworkTableEntry fl_target_angle_nt        = table->GetEntry("fl_target_angle");
-
-        fl_target_error.SetDouble(target_error);
-        fl_target_Distance_nt.SetDouble(target_Distance);
-        fl_target_lock.SetDouble(target_lock);
-        fl_target_angle_nt.SetDouble(target_angle);
-
-        //-----------------------------------------------------------------------------------------------------------
         while (true) // loop forever
         {
                 target_lock = false;
@@ -145,11 +141,14 @@ int main()
                         std::cout << "Grab Frame Status: " << grab_Frame_Status << std::endl;
                 if (grab_Frame_Status > 0)
                 {
+
                         output = source;
                         //outputStreamStd.PutFrame(output);
                         //std::cout << "Streaming output frame...." << std::endl; 
+
                         if (source.rows > 0)
                         {
+                                //**               cvtColor(source, output, cv::COLOR_BGR2GRAY);
                                 pipeline.Process(source);
                                 contours_ptr = pipeline.GetFilterContoursOutput();
                                 contours = *contours_ptr;
@@ -172,7 +171,6 @@ int main()
                                 //};
 
                                 std::vector<cv::Rect> boundingBoxArray;
-                                std::vector<cv::RotatedRect> rotatedRectArray;
 
                                 //boundingBoxArray.push_back(r1);
 
@@ -190,9 +188,7 @@ int main()
                                         for (int count = 0; count < num_contours; count++)
                                         {
                                                 boundingBoxArray.push_back(cv::boundingRect(contours[count]));
-                                                /// *** NOT YET WORKING MK 2019-02-24  cv::RotatedRect rotatedRec = cv::minAreaRect(contours[count]));
-
-                                                rotatedRectArray.push_back(cv::minAreaRect(contours[count]));
+                                                /// *** NOT YET WORKING MK 2019-02-24  cv::RoatatedRect rotatedRec = cv::minAreaRect(contours[count]));
                                                 int midx = ((boundingBoxArray[count].tl()).x + (boundingBoxArray[count].br()).x) / 2;
                                                 int midy = ((boundingBoxArray[count].tl()).y + (boundingBoxArray[count].br()).y) / 2;
                                                 midpointBox[count] = midx;
@@ -217,39 +213,21 @@ int main()
                                                 std::cout << "Midpoint contour #: (" << minimum << ")" << std::endl;
                                                 std::cout << "Midpoint x: (" << midpointBox[minimum] << ")" << std::endl;
                                         }
-                                        cv::Scalar RED = cv::Scalar(0, 0, 255); //BGR Red 
-                                        cv::Scalar WHITE = cv::Scalar(255, 255, 255);   // BGR White
+                                        cv::Scalar RED = cv::Scalar(0, 0, 255); //BGR Red Red
+
                                         int THICKNESS_WHITE     = 1;
                                         int THICKNESS_RED       = 4;
-                                        // MK 2019-03-06        Skip drawing the BIG bounding box when switching to rotated rectangles bounding boxes
-                                        //cv::rectangle(output, boundingBoxArray[minimum].tl(), boundingBoxArray[minimum].br(), RED, THICKNESS_RED, 8, 0);
+                                        cv::rectangle(output, boundingBoxArray[minimum].tl(), boundingBoxArray[minimum].br(), RED, THICKNESS_RED, 8, 0);
                                         target_lock = true;
                                         int midxr = ((boundingBoxArray[minimum].tl()).x + (boundingBoxArray[minimum].br()).x) / 2;
-                                        //Draw a THICK circle
+                                        //Draw a THICC circle
                                         cv::Point midpoint(midxr, ((boundingBoxArray[minimum].tl()).y));
                                         cv::circle(output, midpoint, 5, RED, THICKNESS_RED, 8, 0);
-
-        //-----------------------------------------------------------------------------------------------------------
-                                        for( int i = 0; i < num_contours; i++ )
-                                        {
-                                        cv::Scalar color = WHITE;
-                                        if (0 ) // debug )
-                                        {
-                                                // contour
-                                                cv::drawContours( output, contours, i, color, 1, 8, std::vector<cv::Vec4i>(), 0, cv::Point() );
-                                        }
-                                        // rotated rectangle
-                                        cv::Point2f rect_points[4]; 
-                                        
-                                        rotatedRectArray[i].points( rect_points );
-                                        for( int j = 0; j < 4; j++ )
-                                                cv::line( output, rect_points[j], rect_points[(j+1)%4], RED, THICKNESS_RED, 8 );
-                                        }
-        //-----------------------------------------------------------------------------------------------------------
 
                                         target_x = midxr;
                                         target_y = ((boundingBoxArray[minimum].tl()).y);
                                          
+                                        cv::Scalar WHITE = cv::Scalar(255, 255, 255);
                                         for (int otherBox = 0; otherBox < num_contours; otherBox++)
                                         {
                                                 if (otherBox != minimum)
@@ -270,22 +248,55 @@ int main()
                                  // if (num_contours>1)
                                 //          std::this_thread::sleep_for (std::chrono::milliseconds(100));
                         } // if ( source.rows > 0)
+                        //       }
+
+                        //if ( output.rows > 0)
+
+                        /* if (!source.data)
+
+                        {
+                                //std::cout << "output.rows = 0...." << std::endl;
+                                std::cout << "! source.data is TRUE...." << std::endl;
+                        }
+                        else
+                                outputStreamStd.PutFrame(output);
+                                std::cout << "Streaming output frame...." << std::endl;     
+                        */
 
                         outputStreamStd.PutFrame(output);
-                        if (debug) 
-                                 std::cout << "Streaming output frame...." << std::endl;
 
-                        if(target_lock = true) 
-                        {
                                 target_error = target_x-(width/2);
-	                        fl_target_error.SetDouble(target_error);
-	                        fl_target_Distance_nt.SetDouble(target_Distance);
-                                fl_target_lock.SetDouble(target_lock);
-        	                fl_target_angle_nt.SetDouble(target_angle);
+                                if (debug) 
+                                        std::cout << "Streaming output frame...." << std::endl;
+
+                        
+        //network tables setup
+	unsigned int port = 1735;
+	auto inst = nt::NetworkTableInstance::GetDefault();
+	//inst.StartServer("10.21.70.2");
+	std::cout << "server started" << std::endl;
+	inst.StartClient("10.21.70.2",port);
+	auto table = inst.GetTable("VisionTable");
+
+        if(target_lock = true) {
+      nt::NetworkTableEntry fl_target_error =  table->GetEntry("fl_target_error");
+	fl_target_error.SetDouble(target_x - (width/2));
+	  nt::NetworkTableEntry fl_target_Distance_nt =  table->GetEntry("fl_target_Distance");
+	fl_target_Distance_nt.SetDouble(target_Distance);
+	
+        nt::NetworkTableEntry fl_target_lock = table->GetEntry("fl_target_lock");
+        fl_target_lock.SetDouble(target_lock);
 			}
+	  nt::NetworkTableEntry fl_target_angle_nt =  table->GetEntry("fl_target_angle");
+	fl_target_angle_nt.SetDouble(target_angle);
                         
                         
                 } // if(grab_Frame_Status > -1)
         } // while(true)
+
+        //    std::thread visionThread(VisionThread);
+
+        //    visionThread.detach();
+
         return 0;
 };

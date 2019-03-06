@@ -11,8 +11,8 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step Resize_Image0:
 	//input
 	cv::Mat resizeImageInput = source0;
-	double resizeImageWidth = 160.0;  // default Double
-	double resizeImageHeight = 120.0;  // default Double
+	double resizeImageWidth 	= 320.0; 	//160.0;  // default Double
+	double resizeImageHeight 	= 240.0; 	//120.0;  // default Double
 	int resizeImageInterpolation = cv::INTER_CUBIC;
 	resizeImage(resizeImageInput, resizeImageWidth, resizeImageHeight, resizeImageInterpolation, this->resizeImageOutput);
 	//Step HSV_Threshold0:
