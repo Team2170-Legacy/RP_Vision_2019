@@ -20,7 +20,7 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 		//too far or too close  
 		return -1;
 	}
-	for(int i = 0; i < arrSize; i++){
+	for(int i = 0; i < arrSize - 1; i++){
 		// Search from highest distance to lowest distance
 		// As index increases, distance increases and y-coordinates decrease
 		if(yCoord < yCoordArr[i] && yCoord > yCoordArr[i + 1]){ 
