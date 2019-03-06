@@ -341,6 +341,7 @@ int main() {
 			//	exposure_test_counter = exposure_test_counter + 1;
 				
 			cExposure_temp 	= table->GetNumber("exposure",2);
+			std::cout<<cExposure_temp<<std::endl;
 			camera.SetExposureManual(cExposure_temp);
 			
 
