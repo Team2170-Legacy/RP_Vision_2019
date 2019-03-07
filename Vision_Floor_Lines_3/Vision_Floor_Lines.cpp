@@ -36,7 +36,8 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 	for(int i = 0; i < arrSize - 1; i++){
 		// Search from highest distance to lowest distance
 		// As index increases, distance increases and y-coordinates decrease
-		if(yCoord < yCoordArr[i] && yCoord > yCoordArr[i + 1]){ 
+		if( (yCoord < yCoordArr[i]) && (yCoord > yCoordArr[i + 1]) )
+                { 
 			distance = ((yCoord - yCoordArr[i+1])/*How much over in percentage*//(yCoordArr[i] - yCoordArr[i+1]))*(distances[i+1] - distances[i])/*finds distance over*/ + distances[i+1]/*distance before*/;
 		}
 	}
@@ -47,18 +48,38 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 
 
 //-----------------------------------------------------------------------------------------------------------
-double calc_Angle(int xt, int yt, int xb, int yb){
-    double angle;
+// original 2019-03-05 version
+//double calc_Angle(int xt, int yt, int xb, int yb){
+//    double angle;
+//
+//
+//   if(xt > xb){
+//        //leaning towards right
+//        angle = 90 - atan((xt-xb)/(yt-yb));
+//        angle = angle * -1;
+//    } else if(xb > xt){
+//        angle = 90 - atan((xb-xt)/(yt-yb));
+//    } else{
+//        angle = 0;
+//    }
 
-    if(xt > xb){
-        //leaning towards right
-        angle = 90 - atan((xt-xb)/(yt-yb));
-        angle = angle * -1;
-    } else if(xb > xt){
-        angle = 90 - atan((xb-xt)/(yt-yb));
-    } else{
-        angle = 0;
+    // MK 2019-03-07 version
+double calc_Angle(double xt, double yt, double xb, double yb){
+
+    double angle = 0;
+    double del_x = xt - xb;
+    double del_y = yt - yb;
+    double pi = 3.14159;
+
+    if(xt > xb) // leaning towards right
+    {
+        angle = -180.0/pi * ( atan( abs(del_x)/abs(del_y)) );
+    } 
+    else  // leadning towards the left
+    {
+        angle = +180.0/pi * ( atan( abs(del_x)/abs(del_y)) );
     }
+
 
     return angle;
 }
@@ -126,7 +147,7 @@ int main()
         nt::NetworkTableEntry fl_target_angle_nt        = table->GetEntry("fl_target_angle");
 
         nt::NetworkTableEntry automove                  = table->GetEntry("automove");
-        automove.SetDouble(0);
+        automove.SetBoolean(false);
         bool automove_flag = false;                     // true if automove button is being pressed
 
         fl_target_error.SetDouble(target_error);
@@ -137,8 +158,8 @@ int main()
         //-----------------------------------------------------------------------------------------------------------
         while (!run_once_flag) // loop forever
         {
-                double automove_temp =  table->GetNumber("automove",0);
-                automove_flag = automove_temp = 1.0;
+                bool automove_temp =  table->GetBoolean("automove",false);
+                automove_flag = automove_temp;
 
                 target_lock = false;
 
@@ -180,13 +201,16 @@ int main()
                                 std::vector<cv::Rect> boundingBoxArray;
                                 std::vector<cv::RotatedRect> rotatedRectArray;
                                 cv::Point2f rect_points[4]; 
-                                                                                cv::Scalar RED = cv::Scalar(0, 0, 255); //BGR Red 
-                                cv::Scalar WHITE = cv::Scalar(255, 255, 255);   // BGR White
+                                cv::Scalar RED          = cv::Scalar(0, 0, 255);        //BGR Red 
+                                cv::Scalar WHITE        = cv::Scalar(255, 255, 255);    // BGR White
+                                cv::Scalar YELLOW       = cv::Scalar(0, 255, 255);      // BGR Yellow
+                                cv::Scalar BLUE         = cv::Scalar(255, 0, 0);        // BGR Blue
                                 int THICKNESS_WHITE     = 1;
                                 int THICKNESS_RED       = 4;
 
                                 int num_contours = contours.size();
                                 if (debug)
+                                        std::cout << std::endl;
                                         std::cout << "Found # contours (" << num_contours << ")" << std::endl;
                                 int midpointBox[num_contours]; // remove later
                                 cv::Point topmidpoint[num_contours];  // array of the mid point of the rotated rectangles top line
@@ -199,7 +223,7 @@ int main()
 
                                         for (int count = 0; count < num_contours; count++)
                                         {
-                                                boundingBoxArray.push_back(cv::boundingRect(contours[count]));
+                                                //boundingBoxArray.push_back(cv::boundingRect(contours[count]));
                                                 rotatedRectArray.push_back(cv::minAreaRect(contours[count]));
                                                 //
                                                 //code below was for boundingBoxArray
@@ -214,7 +238,7 @@ int main()
                                                 rotatedRectArray[count].points( rect_points );
                                                 for( int j = 0; j < 4; j++ )
                                                 {
-                                                        cv::line( output, rect_points[j], rect_points[(j+1)%4], WHITE, THICKNESS_WHITE, 8 );
+                                                        cv::line( output, rect_points[j], rect_points[(j+1)%4], YELLOW, THICKNESS_WHITE, 8 );
                                                 }
 
                                                 // find the mid points of the top edge of the rotated rectangles
@@ -236,13 +260,30 @@ int main()
                                                 // find NEXT highest y-coord point
                                                 for( int j = 0; j < 4; j++ )
                                                 {
-                                                        if (rect_points[j].y < y_min2 && rect_points[j].y > y_min1)
+                                                        if ( (rect_points[j].y < y_min2) && ( j != ind_min1 ) )
                                                         {
                                                                 y_min2          = rect_points[j].y;
                                                                 ind_min2        = j;
                                                         }
                                                 }
 
+                                                // not sure if above finding routine works
+                                                // debug with overrides
+                                                //ind_min1=1;
+                                                //ind_min2=2;
+
+
+                                                if ( debug )
+                                                {
+                                                        std::cout << "rect_points[0] = " << rect_points[0] << std::endl;
+                                                        std::cout << "rect_points[1] = " << rect_points[1] << std::endl;
+                                                        std::cout << "rect_points[2] = " << rect_points[2] << std::endl;
+                                                        std::cout << "rect_points[3] = " << rect_points[3] << std::endl;
+                                                        std::cout << "ymin1 = (" << y_min1 << ")" << std::endl;
+                                                        std::cout << "ymin2 = (" << y_min2<< ")" << std::endl;
+                                                        std::cout << "ind_min1 = (" << ind_min1 << ")" << std::endl;
+                                                        std::cout << "ind_min2 = (" << ind_min2 << ")" << std::endl;
+                                                }
                                                 // store the top line midpoint
                                                 topmidpoint[count].x    = 0.5*(rect_points[ind_min1].x + rect_points[ind_min2].x );
                                                 topmidpoint[count].y    = 0.5*(rect_points[ind_min1].y + rect_points[ind_min2].y );
@@ -255,13 +296,13 @@ int main()
 
                                                 for( int j = 0; j < 4; j++ )
                                                 {
-                                                        if (j != ind_min1 && j != ind_min2)
+                                                        if ( (j != ind_min1) && (j != ind_min2) )
                                                                 ind_min3 = j;
                                                 }
 
                                                 for( int j = 0; j < 4; j++ )
                                                 {
-                                                        if (j != ind_min1 && j != ind_min2 && j != ind_min3)
+                                                        if ( (j != ind_min1) && (j != ind_min2) && (j != ind_min3) )
                                                                 ind_min4 = j;
                                                 }
 
@@ -317,31 +358,34 @@ int main()
                                         // MK 2019-03-06        Skip drawing the BIG bounding box when switching to rotated rectangles bounding boxes
                                         //cv::rectangle(output, boundingBoxArray[minimum_index].tl(), boundingBoxArray[minimum_index].br(), RED, THICKNESS_RED, 8, 0);
 
-
-                                        //Draw a THICK circle
-                                        int circle_radius = 5;
-                                        cv::circle(output, topmidpoint[minimum_index], circle_radius, RED, THICKNESS_RED, 8, 0);
-
-                                        //-----------------------------------------------------------------------------------------------------------
-                                        for( int i = 0; i < num_contours; i++ )
-                                        {
-                                        cv::Scalar color = WHITE;
-                                        if (0 ) // debug )
-                                        {
-                                                // contour
-                                                cv::drawContours( output, contours, i, color, 1, 8, std::vector<cv::Vec4i>(), 0, cv::Point() );
-                                        }
-                                        // draw rotated rectangle
-                                        cv::Point2f rect_points[4]; 
-                                        
-                                        rotatedRectArray[i].points( rect_points );
-                                        for( int j = 0; j < 4; j++ )
-                                                cv::line( output, rect_points[j], rect_points[(j+1)%4], RED, THICKNESS_RED, 8 );
-                                        }
-        //-----------------------------------------------------------------------------------------------------------
-
                                         target_x = topmidpoint[minimum_index].x;
                                         target_y = topmidpoint[minimum_index].y;
+
+                                        //Draw a THICK circles at TOP and BOTTOM
+                                        int circle_radius = 5;
+                                        cv::circle(output, topmidpoint[minimum_index], circle_radius, RED, THICKNESS_RED, 8, 0);
+                                        cv::circle(output, bottommidpoint[minimum_index], circle_radius, BLUE, THICKNESS_RED, 8, 0);
+
+                                        //-----------------------------------------------------------------------------------------------------------
+                                        //for( int i = 0; i < num_contours; i++ )
+                                        //{
+                                        //cv::Scalar color = WHITE;
+                                        //if (0 ) // debug )
+                                        //{
+                                        //        // contour
+                                        //        cv::drawContours( output, contours, i, color, 1, 8, std::vector<cv::Vec4i>(), 0, cv::Point() );
+                                        //}
+
+
+                                        // draw rotated target lock rectangle in RED, other rectangles already drawn in WHITE
+                                        cv::Point2f rect_points[4]; 
+                                        
+                                        rotatedRectArray[minimum_index].points( rect_points );
+                                        for( int j = 0; j < 4; j++ )
+                                                cv::line( output, rect_points[j], rect_points[(j+1)%4], RED, THICKNESS_RED, 8 );
+                                        //}
+        //-----------------------------------------------------------------------------------------------------------
+
 
                                         prev_targetMidpoint_x   = target_x;
                                          
@@ -354,14 +398,24 @@ int main()
                                        // }
 
                                 }  // if (num_contours>=1)
-                                                        
-                                // for 160x120 images
-                                //target_Distance = calc_Distance(target_y, small_yCoord,4);
 
-                                // for 320x240 images
-                                target_Distance = calc_Distance(target_y, medium_yCoord,4);
-                                // MK TO BE UPDATED target_angle = calc_Angle (boundingBoxArray[minimum_index].tl().x, boundingBoxArray[minimum_index].tl().y,boundingBoxArray[minimum_index].br().x, boundingBoxArray[minimum_index].br().y  );
-                                target_angle = calc_Angle (target_x, target_y, bottommidpoint[minimum_index].x , bottommidpoint[minimum_index].y  );
+                                if ( target_lock ) 
+                                {
+                                        // for 160x120 images
+                                        //target_Distance = calc_Distance(target_y, small_yCoord,4);
+
+                                        // for 320x240 images
+                                        target_Distance = calc_Distance(target_y, medium_yCoord,4);
+                                        // MK TO BE UPDATED target_angle = calc_Angle (boundingBoxArray[minimum_index].tl().x, boundingBoxArray[minimum_index].tl().y,boundingBoxArray[minimum_index].br().x, boundingBoxArray[minimum_index].br().y  );
+                                        target_angle = calc_Angle (target_x, target_y, bottommidpoint[minimum_index].x , bottommidpoint[minimum_index].y  );
+                                        //target_angle = 99.0;
+                                }
+                                else
+                                {
+                                        target_Distance = 0;
+                                        target_angle    = 0;
+                                }
+                                
         
                         } // if ( source.rows > 0)
 
