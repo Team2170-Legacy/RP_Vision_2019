@@ -17,15 +17,6 @@
 #include "networktables/NetworkTableInstance.h"
 
 
-/*class Distance{
-    public:
-    float calc_Distance(int y) 
-    {
-        return 2.33;
-    }
-};
-*/
-
 //-----------------------------------------------------------------------------------------------------------
 // As index increases, distance increases and y-coordinates decrease
 int table_size = 4;
@@ -80,10 +71,13 @@ int main()
 
         //    {
 
-        int debug = 1;          // debug flag, set 1 when additional output requested to console output
+        int     debug = 1;              // debug flag, set 1 when additional output requested to console output
+        bool    run_once_flag = false;   // set to true to run main loop only ONCE for debug 
 
         int width       = 320;        //160;
         int height      = 240;       // 120;
+        int targetMidpoint_x            = width / 2;    // middle of the image, replace later with target locking during auto
+        int prev_targetMidpoint_x       = targetMidpoint_x;     // previous target x, used to lock on target during automove steering
 
         grip::GripPipeline pipeline;
         cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
@@ -131,23 +125,35 @@ int main()
         nt::NetworkTableEntry fl_target_lock            = table->GetEntry("fl_target_lock");
         nt::NetworkTableEntry fl_target_angle_nt        = table->GetEntry("fl_target_angle");
 
+        nt::NetworkTableEntry automove                  = table->GetEntry("automove");
+        automove.SetDouble(0);
+        bool automove_flag = false;                     // true if automove button is being pressed
+
         fl_target_error.SetDouble(target_error);
         fl_target_Distance_nt.SetDouble(target_Distance);
         fl_target_lock.SetDouble(target_lock);
         fl_target_angle_nt.SetDouble(target_angle);
 
         //-----------------------------------------------------------------------------------------------------------
-        while (true) // loop forever
+        while (!run_once_flag) // loop forever
         {
+                double automove_temp =  table->GetNumber("automove",0);
+                automove_flag = automove_temp = 1.0;
+
                 target_lock = false;
+
                 grab_Frame_Status = cvSink.GrabFrame(source);
+                while (run_once_flag && !grab_Frame_Status)
+                {
+                        grab_Frame_Status = cvSink.GrabFrame(source);
+                }
+
                 if (debug)
                         std::cout << "Grab Frame Status: " << grab_Frame_Status << std::endl;
+
                 if (grab_Frame_Status > 0)
                 {
                         output = source;
-                        //outputStreamStd.PutFrame(output);
-                        //std::cout << "Streaming output frame...." << std::endl; 
                         if (source.rows > 0)
                         {
                                 pipeline.Process(source);
@@ -173,63 +179,150 @@ int main()
 
                                 std::vector<cv::Rect> boundingBoxArray;
                                 std::vector<cv::RotatedRect> rotatedRectArray;
-
-                                //boundingBoxArray.push_back(r1);
-
-                                //               boundingBoxArray[1] = r1;
+                                cv::Point2f rect_points[4]; 
+                                                                                cv::Scalar RED = cv::Scalar(0, 0, 255); //BGR Red 
+                                cv::Scalar WHITE = cv::Scalar(255, 255, 255);   // BGR White
+                                int THICKNESS_WHITE     = 1;
+                                int THICKNESS_RED       = 4;
 
                                 int num_contours = contours.size();
                                 if (debug)
                                         std::cout << "Found # contours (" << num_contours << ")" << std::endl;
-                                int midpointBox[num_contours];
-                                int minimum = 0;
-                                //               boundingBoxArray[0] = cv::boundingRect(contours[0]);
+                                int midpointBox[num_contours]; // remove later
+                                cv::Point topmidpoint[num_contours];  // array of the mid point of the rotated rectangles top line
+                                cv::Point bottommidpoint[num_contours];  // array of the mid point of the rotated rectangles bottom line
+                                int minimum_index = 0;
 
                                 if (num_contours>=1)
                                 {
+                                        target_lock = true;
+
                                         for (int count = 0; count < num_contours; count++)
                                         {
                                                 boundingBoxArray.push_back(cv::boundingRect(contours[count]));
-                                                /// *** NOT YET WORKING MK 2019-02-24  cv::RotatedRect rotatedRec = cv::minAreaRect(contours[count]));
-
                                                 rotatedRectArray.push_back(cv::minAreaRect(contours[count]));
-                                                int midx = ((boundingBoxArray[count].tl()).x + (boundingBoxArray[count].br()).x) / 2;
-                                                int midy = ((boundingBoxArray[count].tl()).y + (boundingBoxArray[count].br()).y) / 2;
-                                                midpointBox[count] = midx;
-                                        }
+                                                //
+                                                //code below was for boundingBoxArray
+                                                //int midx = ((boundingBoxArray[count].tl()).x + (boundingBoxArray[count].br()).x) / 2;
+                                                //int midy = ((boundingBoxArray[count].tl()).y + (boundingBoxArray[count].br()).y) / 2;
+                                                //midpointBox[count] = midx;
+                                                //
+                                        
+                                                // draw white outlines for all rotated rectangles found
 
+                                                
+                                                rotatedRectArray[count].points( rect_points );
+                                                for( int j = 0; j < 4; j++ )
+                                                {
+                                                        cv::line( output, rect_points[j], rect_points[(j+1)%4], WHITE, THICKNESS_WHITE, 8 );
+                                                }
+
+                                                // find the mid points of the top edge of the rotated rectangles
+                                                // i.e. this line is defined by the two points with the smallest y-coordinates
+
+                                                int y_min1      = 9999;
+                                                int y_min2      = 9999;
+                                                int ind_min1    = -1;
+                                                int ind_min2    = -1;
+                                                // find highest y-coord point
+                                                for( int j = 0; j < 4; j++ )
+                                                {
+                                                        if (rect_points[j].y < y_min1)
+                                                        {
+                                                                y_min1          = rect_points[j].y;
+                                                                ind_min1        = j;
+                                                        }
+                                                }
+                                                // find NEXT highest y-coord point
+                                                for( int j = 0; j < 4; j++ )
+                                                {
+                                                        if (rect_points[j].y < y_min2 && rect_points[j].y > y_min1)
+                                                        {
+                                                                y_min2          = rect_points[j].y;
+                                                                ind_min2        = j;
+                                                        }
+                                                }
+
+                                                // store the top line midpoint
+                                                topmidpoint[count].x    = 0.5*(rect_points[ind_min1].x + rect_points[ind_min2].x );
+                                                topmidpoint[count].y    = 0.5*(rect_points[ind_min1].y + rect_points[ind_min2].y );
+                                                
+
+                                                // calculate and store the bottom line midpoint
+                                                // first calculate the indices of the bottom line points
+                                                int     ind_min3 = -1;
+                                                int     ind_min4 = -1;
+
+                                                for( int j = 0; j < 4; j++ )
+                                                {
+                                                        if (j != ind_min1 && j != ind_min2)
+                                                                ind_min3 = j;
+                                                }
+
+                                                for( int j = 0; j < 4; j++ )
+                                                {
+                                                        if (j != ind_min1 && j != ind_min2 && j != ind_min3)
+                                                                ind_min4 = j;
+                                                }
+
+                                                bottommidpoint[count].x    = 0.5*(rect_points[ind_min3].x + rect_points[ind_min4].x );
+                                                bottommidpoint[count].y    = 0.5*(rect_points[ind_min3].y + rect_points[ind_min4].y );
+
+
+                                        }  //  for (int count = 0; count < num_contours; count++)
+
+
+
+                                        // calculate distances of the found top line midpoints to the middle of the image, 
+                                        // replace later with the target locking during auto
                                         int differenceMidpoint[num_contours];
+
+                                        // implement targetlock HOLD when automove BUTTON is pressed,
+                                        // i.e. Locked target point is the line CLOSEST to the previous target point,
+                                        // i.e. follow the locked line around as it moves around the image
+                                        // this is done to be able to handle that line moving AWAY from the image mid point
+                                        // when performing wall alignment control
+                                        //
+                                        if ( automove_flag )
+                                        {
+                                                targetMidpoint_x = prev_targetMidpoint_x;
+                                        }
+                                        else
+                                        {
+                                                targetMidpoint_x = width / 2;
+                                        }
+                                        
+
+
                                         for (int count = 0; count < num_contours; count++)
                                         {
-                                                differenceMidpoint[count] = abs((width / 2) - midpointBox[count]);
+                                                differenceMidpoint[count] = abs(targetMidpoint_x - topmidpoint[count].x);
                                         }
 
+                                        // find which rectangle has it's top midpoint closest to target
                                         for (int count = 1; count < num_contours; count++)
                                         {
-                                                if (differenceMidpoint[count] < differenceMidpoint[minimum])
+                                                if (differenceMidpoint[count] < differenceMidpoint[minimum_index])
                                                 {
-                                                        minimum = count;
+                                                        minimum_index = count;
                                                 }
                                         }
 
                                         if (debug)
                                         {
-                                                std::cout << "Midpoint contour #: (" << minimum << ")" << std::endl;
-                                                std::cout << "Midpoint x: (" << midpointBox[minimum] << ")" << std::endl;
+                                                std::cout << "Midpoint contour #: (" << minimum_index << ")" << std::endl;
+                                                std::cout << "Midpoint x: (" << topmidpoint[minimum_index].x << ")" << std::endl;
                                         }
-                                        cv::Scalar RED = cv::Scalar(0, 0, 255); //BGR Red 
-                                        cv::Scalar WHITE = cv::Scalar(255, 255, 255);   // BGR White
-                                        int THICKNESS_WHITE     = 1;
-                                        int THICKNESS_RED       = 4;
-                                        // MK 2019-03-06        Skip drawing the BIG bounding box when switching to rotated rectangles bounding boxes
-                                        //cv::rectangle(output, boundingBoxArray[minimum].tl(), boundingBoxArray[minimum].br(), RED, THICKNESS_RED, 8, 0);
-                                        target_lock = true;
-                                        int midxr = ((boundingBoxArray[minimum].tl()).x + (boundingBoxArray[minimum].br()).x) / 2;
-                                        //Draw a THICK circle
-                                        cv::Point midpoint(midxr, ((boundingBoxArray[minimum].tl()).y));
-                                        cv::circle(output, midpoint, 5, RED, THICKNESS_RED, 8, 0);
 
-        //-----------------------------------------------------------------------------------------------------------
+                                        // MK 2019-03-06        Skip drawing the BIG bounding box when switching to rotated rectangles bounding boxes
+                                        //cv::rectangle(output, boundingBoxArray[minimum_index].tl(), boundingBoxArray[minimum_index].br(), RED, THICKNESS_RED, 8, 0);
+
+
+                                        //Draw a THICK circle
+                                        int circle_radius = 5;
+                                        cv::circle(output, topmidpoint[minimum_index], circle_radius, RED, THICKNESS_RED, 8, 0);
+
+                                        //-----------------------------------------------------------------------------------------------------------
                                         for( int i = 0; i < num_contours; i++ )
                                         {
                                         cv::Scalar color = WHITE;
@@ -238,7 +331,7 @@ int main()
                                                 // contour
                                                 cv::drawContours( output, contours, i, color, 1, 8, std::vector<cv::Vec4i>(), 0, cv::Point() );
                                         }
-                                        // rotated rectangle
+                                        // draw rotated rectangle
                                         cv::Point2f rect_points[4]; 
                                         
                                         rotatedRectArray[i].points( rect_points );
@@ -247,28 +340,29 @@ int main()
                                         }
         //-----------------------------------------------------------------------------------------------------------
 
-                                        target_x = midxr;
-                                        target_y = ((boundingBoxArray[minimum].tl()).y);
-                                         
-                                        for (int otherBox = 0; otherBox < num_contours; otherBox++)
-                                        {
-                                                if (otherBox != minimum)
-                                                {
-                                                        cv::rectangle(output, boundingBoxArray[otherBox].tl(), boundingBoxArray[otherBox].br(), WHITE, THICKNESS_WHITE, 8, 0);
-                                                }
-                                        }
+                                        target_x = topmidpoint[minimum_index].x;
+                                        target_y = topmidpoint[minimum_index].y;
 
-                                }
-                                
-                                 
-                        
-                        
-                                target_Distance = calc_Distance(target_y, small_yCoord,4);
-                                target_angle = calc_Angle (boundingBoxArray[minimum].tl().x, boundingBoxArray[minimum].tl().y,boundingBoxArray[minimum].br().x, boundingBoxArray[minimum].br().y  );
+                                        prev_targetMidpoint_x   = target_x;
+                                         
+                                        //for (int otherBox = 0; otherBox < num_contours; otherBox++)
+                                        //{
+                                        //        if (otherBox != minimum_index)
+                                        //        {
+                                        //                cv::rectangle(output, boundingBoxArray[otherBox].tl(), boundingBoxArray[otherBox].br(), WHITE, THICKNESS_WHITE, 8, 0);
+                                        //        }
+                                       // }
+
+                                }  // if (num_contours>=1)
+                                                        
+                                // for 160x120 images
+                                //target_Distance = calc_Distance(target_y, small_yCoord,4);
+
+                                // for 320x240 images
+                                target_Distance = calc_Distance(target_y, medium_yCoord,4);
+                                // MK TO BE UPDATED target_angle = calc_Angle (boundingBoxArray[minimum_index].tl().x, boundingBoxArray[minimum_index].tl().y,boundingBoxArray[minimum_index].br().x, boundingBoxArray[minimum_index].br().y  );
+                                target_angle = calc_Angle (target_x, target_y, bottommidpoint[minimum_index].x , bottommidpoint[minimum_index].y  );
         
-                                
-                                 // if (num_contours>1)
-                                //          std::this_thread::sleep_for (std::chrono::milliseconds(100));
                         } // if ( source.rows > 0)
 
                         outputStreamStd.PutFrame(output);
@@ -277,7 +371,7 @@ int main()
 
                         if(target_lock = true) 
                         {
-                                target_error = target_x-(width/2);
+                                target_error = target_x - targetMidpoint_x;
 	                        fl_target_error.SetDouble(target_error);
 	                        fl_target_Distance_nt.SetDouble(target_Distance);
                                 fl_target_lock.SetDouble(target_lock);
