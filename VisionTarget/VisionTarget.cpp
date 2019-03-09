@@ -264,13 +264,19 @@ int main() {
 	std::cout << "server started" << std::endl;
 	inst.StartClient("10.21.70.2",port);
 	auto table = inst.GetTable("VisionTable");
+
+	nt::NetworkTableEntry left_tape_height =  table->GetEntry("left_tape_height");
+    nt::NetworkTableEntry right_tape_height =  table->GetEntry("right_tape_height");
+	nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
 	nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
+    nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
+	nt::NetworkTableEntry exposure =  table->GetEntry("exposure");
 
 	//----------------------------------------------------------------------------------------------
 	// camera exposure esttings
 	//----------------------------------------------------------------------------------------------
 
-	nt::NetworkTableEntry exposure =  table->GetEntry("exposure");
+	
 	exposure.SetDouble(2);
 	//nt::NetworkTableEntry exposure2 =  table->GetEntry("exposure2");
 
@@ -302,26 +308,25 @@ int main() {
 				targetLocked = false;
 				outputStreamRectStd.PutFrame(source);
 				x_target_error.SetDouble(0);
-				//left_tape_height.SetDouble(0);
-				//right_tape_height.SetDouble(0);
+				left_tape_height.SetDouble(0);
+				right_tape_height.SetDouble(0);
 			}
   
- 			nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
+ 		
  			target_locked.SetBoolean(targetLocked);
 			if(targetLocked) {
 				x_target_error.SetDouble(targetCenterX - (cWidth/2));
-	  		nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
+	  		
 				distance_to_target.SetDouble(calcDistance(targetHeight));
-				nt::NetworkTableEntry left_tape_height =  table->GetEntry("left_tape_height");
-				nt::NetworkTableEntry right_tape_height =  table->GetEntry("right_tape_height");
+				
 				left_tape_height.SetDouble(leftTapeHeight);
 				right_tape_height.SetDouble(rightTapeHeight);
 				//std::cout << calcDistance(targetWidth) << std::endl;
 			}
 			else {
 				x_target_error.SetDouble(0);
-				//left_tape_height.SetDouble(0);
-				//right_tape_height.SetDouble(0);
+				left_tape_height.SetDouble(0);
+				right_tape_height.SetDouble(0);
 			}
 
 			// Expsoure testing
