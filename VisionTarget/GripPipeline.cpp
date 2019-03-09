@@ -11,9 +11,9 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step HSV_Threshold0:
 	//input
 	cv::Mat hsvThresholdInput = source0;
-	double hsvThresholdHue[] = {63.129496402877706, 87.84982935153587};
-	double hsvThresholdSaturation[] = {100.89928057553956, 255.0};
-	double hsvThresholdValue[] = {149.05575539568343, 255.0};
+	double hsvThresholdHue[] = {67.98561151079136, 104.74402730375427};
+	double hsvThresholdSaturation[] = {158.22841726618705, 255.0};
+	double hsvThresholdValue[] = {73.38129496402877, 130.98122866894198};
 	hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, this->hsvThresholdOutput);
 	//Step Find_Contours0:
 	//input
@@ -71,7 +71,6 @@ std::vector<std::vector<cv::Point> >* GripPipeline::GetFilterContoursOutput(){
 		cv::cvtColor(input, out, cv::COLOR_BGR2HSV);
 		cv::inRange(out,cv::Scalar(hue[0], sat[0], val[0]), cv::Scalar(hue[1], sat[1], val[1]), out);
 	}
-
 
 	/**
 	 * Finds contours in an image.

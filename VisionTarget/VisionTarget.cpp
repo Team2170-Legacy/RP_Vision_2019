@@ -84,6 +84,9 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		tmp.push_back(MinY);
 		tmp.push_back(MaxY);
 		bounding.push_back(tmp);
+
+
+		
 	}
 	
 	float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
