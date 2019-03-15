@@ -32,7 +32,9 @@ int 		targetCenterX = 0; // x value of center coordinate of bounding box around 
 bool 		targetLocked = false; // whether or not a target is currently locked
 double 	leftTapeHeight = 0; // height of left tape in locked target
 double 	rightTapeHeight = 0; // height of right tape in locked target
-
+double leftTapeAngle = 0; // angle of left tape in locked target
+double rightTapeAngle = 0; // angle of right tape in locked target
+double tapeAngleDifference = 0;
 
 /*
 void write_log(string message)
@@ -46,6 +48,26 @@ void write_log(string message)
 */
 
 //----------------------------------------------------------------------------------------------
+
+double calc_Angle(double xt, double yt, double xb, double yb) {
+
+    double angle = 0;
+    double del_x = xt - xb;
+    double del_y = yt - yb;
+    double pi = 3.14159;
+
+    if(xt > xb) // leaning towards right
+    {
+        angle = -180.0/pi * ( atan( abs(del_x)/abs(del_y)) );
+    } 
+    else  // leadning towards the left
+    {
+        angle = +180.0/pi * ( atan( abs(del_x)/abs(del_y)) );
+    }
+
+
+    return angle;
+}
 
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours, cv::Scalar color, int thickness, bool updateLockedTargetData)
 {
@@ -62,12 +84,14 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	std::vector<std::vector<float>> bounding;
 
 	double contourHeights [2] = {0 , 0};
+	double contourAngles [2] = {0, 0};
 	float contourMinXs [2] = {0 , 0};
 	for (int c = 0; c < 2; c++)
 	{
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
 		cv::Point2f corners[4];
 		boundingBox.points(corners);
+		// 0 is topleft, goes counter - clockwise from there
 		cv::line(drawing, corners[0], corners[1], cv::Scalar(255, 255, 255));
 		cv::line(drawing, corners[1], corners[2], cv::Scalar(255, 255, 255));
 		cv::line(drawing, corners[2], corners[3], cv::Scalar(255, 255, 255));
@@ -85,8 +109,16 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		tmp.push_back(MaxY);
 		bounding.push_back(tmp);
 
+if(updateLockedTargetData) 
+{
+cv::Point2f bottomMidpt = new cv::Point2f((corners[1].x+corners[2].x)/2, (corners[1].y+corners[2].y)/2);
+cv::Point2f topMidpt = new cv::Point2f((corners[3].x+corners[0].x)/2, (corners[3].y+corners[0].y)/2);
+contourAngles[c] = calc_Angle(topMidpt.x, topMidpt.y, bottomMidpt.x, bottomMidpt.y);
+}
 
-		
+}
+
+
 	}
 	
 	float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
@@ -111,12 +143,16 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	if(contourMinXs[0]<contourMinXs[1]) {
 	leftTapeHeight = contourHeights[0];
 	rightTapeHeight = contourHeights[1];
+	leftTapeAngle = contourAngles[0];
+	rightTapeAngle = contourAngles[1];
 	}
 	else {
-		leftTapeHeight = contourHeights[1];
+	leftTapeHeight = contourHeights[1];
 	rightTapeHeight = contourHeights[0];
+	leftTapeAngle = contourAngles[1];
+	rightTapeAngle = contourAngles[0];
 	}
-
+tapeAngleDifference = leftTapeAngle - rightTapeAngle;
 }
 
 
@@ -232,7 +268,8 @@ int main() {
 	
 	// camera setup
 	int cWidth = 320;
-  int cHeight = 240;
+    int cHeight = 240;
+	//frc::CameraServer::kBasePort = 5800;
 
 	int cExposure = 2;
 	int cWhiteBalance = 5100;
@@ -247,6 +284,7 @@ int main() {
 	cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
 	// MK 03/05/2019 Can the line below be commented out so that we for sure don't send any additional
 	// video streams when debug = false?
+   
 	cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("hsvoutput", cWidth, cHeight);
 
 	cs::CvSource outputStreamRectStd = frc::CameraServer::GetInstance()->PutVideo("countouroutput", cWidth, cHeight);
@@ -325,6 +363,7 @@ int main() {
 				left_tape_height.SetDouble(leftTapeHeight);
 				right_tape_height.SetDouble(rightTapeHeight);
 				//std::cout << calcDistance(targetWidth) << std::endl;
+				std::cout << "tapeAngleDifference" + tapeAngleDifference << std::endl;
 			}
 			else {
 				x_target_error.SetDouble(0);
