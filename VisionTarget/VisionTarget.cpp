@@ -361,6 +361,8 @@ int main() {
 	auto table = inst.GetTable("VisionTable");
 
     nt::NetworkTableEntry tape_angle_difference = table->GetEntry("tape_angle_difference");
+	nt::NetworkTableEntry left_tape_angle = table->GetEntry("left_tape_angle");
+	nt::NetworkTableEntry right_tape_angle = table->GetEntry("right_tape_angle");
 	nt::NetworkTableEntry left_tape_height =  table->GetEntry("left_tape_height");
     nt::NetworkTableEntry right_tape_height =  table->GetEntry("right_tape_height");
 	nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
@@ -418,6 +420,8 @@ int main() {
 				left_tape_height.SetDouble(leftTapeHeight);
 				right_tape_height.SetDouble(rightTapeHeight);
 				tape_angle_difference.SetDouble(tapeAngleDifference);
+				left_tape_angle.SetDouble(leftTapeAngle);
+				right_tape_angle.SetDouble(rightTapeAngle);
 				std::cout << "tapeAngleDifference: ";
 				std::cout << tapeAngleDifference << std::endl;
 				std::cout << "leftTapeAngle: ";
