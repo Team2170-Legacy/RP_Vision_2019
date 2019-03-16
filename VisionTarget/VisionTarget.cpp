@@ -71,17 +71,22 @@ double calc_Angle(double xt, double yt, double xb, double yb) {
 
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours, cv::Scalar color, int thickness, bool updateLockedTargetData)
 {
+    std::vector<std::vector<float>> bounding;
 
 	cv::Mat drawing = source;
 	if (contours.size() < 2)
 	{
 		return drawing;
 	}
+
 	cv::Point2f* topLeft;
 	cv::Point2f* bottomLeft;
 	cv::Point2f* topRight;
 	cv::Point2f* bottomRight;
-	std::vector<std::vector<float>> bounding;
+	cv::Point2f* bottomMidpt;
+	cv::Point2f* topMidpt;
+
+	
 
 	double contourHeights [2] = {0 , 0};
 	double contourAngles [2] = {0, 0};
@@ -109,17 +114,66 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		tmp.push_back(MaxY);
 		bounding.push_back(tmp);
 
-if(updateLockedTargetData) 
-{
-cv::Point2f bottomMidpt = new cv::Point2f((corners[1].x+corners[2].x)/2, (corners[1].y+corners[2].y)/2);
-cv::Point2f topMidpt = new cv::Point2f((corners[3].x+corners[0].x)/2, (corners[3].y+corners[0].y)/2);
-contourAngles[c] = calc_Angle(topMidpt.x, topMidpt.y, bottomMidpt.x, bottomMidpt.y);
-}
 
-}
-
-
+if(updateLockedTargetData) {  
+	
+	float y_min1 = 100000;
+	int ind_min1;
+	float y_min2 = 100000;
+	int ind_min2;
+	float y_max1;
+	int ind_max1;
+	float y_max2;
+	int ind_max2;
+	
+std::cout << ("checkpoint") <<std::endl;
+	for( int j = 0; j < 4; j++ )
+	{
+			if (corners[j].y < y_min1)
+			{
+					y_min1          = corners[j].y;
+					ind_min1        = j;
+			}
 	}
+	// find NEXT highest y-coord point
+	for( int j = 0; j < 4; j++ )
+	{
+			if ( (corners[j].y < y_min2) && ( j != ind_min1 ) )
+			{
+					y_min2          = corners[j].y;
+					ind_min2        = j;
+			}
+	}
+	for( int j = 0; j < 4; j++ )
+	{
+			if (corners[j].y > y_max1)
+			{
+					y_max1          = corners[j].y;
+					ind_max1        = j;
+			}
+	}
+	// find NEXT highest y-coord point
+	for( int j = 0; j < 4; j++ )
+	{
+			if ( (corners[j].y > y_max2) && ( j != ind_max1 ) )
+			{
+					y_max2          = corners[j].y;
+					ind_max2        = j;
+			}
+	}
+std::cout << ("checkpoint2") <<std::endl;
+	float bx = (corners[ind_max1].x+corners[ind_max2].x)/2;
+	float by = (corners[ind_max1].y+corners[ind_max2].y)/2;
+	float tx = (corners[ind_min1].x+corners[ind_min2].x)/2;
+	float ty = (corners[ind_min1].y+corners[ind_min2].y)/2;
+contourAngles[c] = calc_Angle(tx, ty, bx, by);
+std::cout << ("checkpoint3") <<std::endl;
+}
+
+}
+
+
+	
 	
 	float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
 	float MaxX = fmaxf(bounding.at(0).at(1), bounding.at(1).at(1));
@@ -155,7 +209,7 @@ contourAngles[c] = calc_Angle(topMidpt.x, topMidpt.y, bottomMidpt.x, bottomMidpt
 tapeAngleDifference = leftTapeAngle - rightTapeAngle;
 }
 
-
+std::cout << ("checkpoint4") <<std::endl;
 	return drawing;
 } //cv::Mat detect_rectangles
 
@@ -306,6 +360,7 @@ int main() {
 	inst.StartClient("10.21.70.2",port);
 	auto table = inst.GetTable("VisionTable");
 
+    nt::NetworkTableEntry tape_angle_difference = table->GetEntry("tape_angle_difference");
 	nt::NetworkTableEntry left_tape_height =  table->GetEntry("left_tape_height");
     nt::NetworkTableEntry right_tape_height =  table->GetEntry("right_tape_height");
 	nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target");
@@ -362,13 +417,19 @@ int main() {
 				
 				left_tape_height.SetDouble(leftTapeHeight);
 				right_tape_height.SetDouble(rightTapeHeight);
-				//std::cout << calcDistance(targetWidth) << std::endl;
-				std::cout << "tapeAngleDifference" + tapeAngleDifference << std::endl;
+				tape_angle_difference.SetDouble(tapeAngleDifference);
+				std::cout << "tapeAngleDifference: ";
+				std::cout << tapeAngleDifference << std::endl;
+				std::cout << "leftTapeAngle: ";
+				std::cout << leftTapeAngle << std::endl;
+				std::cout << "rightTapeAngle: ";
+				std::cout << rightTapeAngle << std::endl;
 			}
 			else {
 				x_target_error.SetDouble(0);
 				left_tape_height.SetDouble(0);
 				right_tape_height.SetDouble(0);
+				tape_angle_difference.SetDouble(0);
 			}
 
 			// Expsoure testing
@@ -393,8 +454,8 @@ int main() {
 			
 
 			
-		} //if (source.rows > 0) 
-	} // while (true)
+		} 
+	} 
 	
 	return 0;
 
