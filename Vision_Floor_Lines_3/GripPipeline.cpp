@@ -1,5 +1,5 @@
 #include "GripPipeline.h"
-
+#include "FloorLines_Calibration.h"
 namespace grip {
 
 GripPipeline::GripPipeline() {
@@ -18,9 +18,9 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step HSV_Threshold0:
 	//input
 	cv::Mat hsvThresholdInput = resizeImageOutput;
-	double hsvThresholdHue[] = {0.0, 180.0};
-	double hsvThresholdSaturation[] = {0.0, 57.52525252525252};
-	double hsvThresholdValue[] = {248.5791366906475, 255.0};
+	double hsvThresholdHue[] = {Hmin, Hmax};
+	double hsvThresholdSaturation[] = {Smin, Smax};
+	double hsvThresholdValue[] = {Vmin, Vmax};
 	hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, this->hsvThresholdOutput);
 	//Step Blur0:
 	//input

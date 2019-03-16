@@ -95,8 +95,8 @@ int main()
         int     debug = 1;              // debug flag, set 1 when additional output requested to console output
         bool    run_once_flag = false;   // set to true to run main loop only ONCE for debug 
 
-        int width       = 320;        //160;
-        int height      = 240;       // 120;
+        int width       = /*320;*/       160;
+        int height      = /*240;*/       120;
         int targetMidpoint_x            = width / 2;    // middle of the image, replace later with target locking during auto
         int prev_targetMidpoint_x       = targetMidpoint_x;     // previous target x, used to lock on target during automove steering
 
