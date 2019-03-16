@@ -20,8 +20,8 @@
 //-----------------------------------------------------------------------------------------------------------
 // As index increases, distance increases and y-coordinates decrease
 int table_size = 4;
-double distances[] = {0, 1, 2, 3};
-double small_yCoord[] = {115.0, 69.2, 37.5, 14.2};
+double distances[] = {0, 1, 2, 3, 5, 6, 7};
+double small_yCoord[] = {148.0, 103.2, 72.0, 50.4, 34.0, 20.8, 10.8, 3.0};
 double medium_yCoord[] = {230.0, 138.3, 75.0, 28.3};
 double big_yCoord[] = {690.0, 415.0, 225.0, 85.0};
 
@@ -95,18 +95,18 @@ int main()
         int     debug = 1;              // debug flag, set 1 when additional output requested to console output
         bool    run_once_flag = false;   // set to true to run main loop only ONCE for debug 
 
-        int width       = /*320;*/       160;
-        int height      = /*240;*/       120;
+        int width       = /*320;*/       160;    /*640;*/
+        int height      = /*240;*/       120;   /*480;*/
         int targetMidpoint_x            = width / 2;    // middle of the image, replace later with target locking during auto
         int prev_targetMidpoint_x       = targetMidpoint_x;     // previous target x, used to lock on target during automove steering
 
         grip::GripPipeline pipeline;
         cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
-
+        camera.SetExposureManual(69);
         camera.SetResolution(width, height);
         cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
         cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("Floorlines", width, height);
-
+        cs::CvSource outputStreamHSV = frc::CameraServer::GetInstance()->PutVideo("HSV Stream", width, height);
         cv::Mat source;
         cv::Mat output;
         cv::Mat *output_ptr;
@@ -272,7 +272,7 @@ int main()
                                                 //ind_min1=1;
                                                 //ind_min2=2;
 
-
+ 
                                                 if ( debug )
                                                 {
                                                         std::cout << "rect_points[0] = " << rect_points[0] << std::endl;
@@ -405,7 +405,7 @@ int main()
                                         //target_Distance = calc_Distance(target_y, small_yCoord,4);
 
                                         // for 320x240 images
-                                        target_Distance = calc_Distance(target_y, medium_yCoord,4);
+                                        target_Distance = calc_Distance(target_y, small_yCoord,4);
                                         // MK TO BE UPDATED target_angle = calc_Angle (boundingBoxArray[minimum_index].tl().x, boundingBoxArray[minimum_index].tl().y,boundingBoxArray[minimum_index].br().x, boundingBoxArray[minimum_index].br().y  );
                                         target_angle = calc_Angle (target_x, target_y, bottommidpoint[minimum_index].x , bottommidpoint[minimum_index].y  );
                                         //target_angle = 99.0;
@@ -418,7 +418,7 @@ int main()
                                 
         
                         } // if ( source.rows > 0)
-
+                        outputStreamHSV.PutFrame(*pipeline.GetHsvThresholdOutput());
                         outputStreamStd.PutFrame(output);
                         if (debug) 
                                  std::cout << "Streaming output frame...." << std::endl;
