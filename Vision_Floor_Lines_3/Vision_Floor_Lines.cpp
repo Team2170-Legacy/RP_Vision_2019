@@ -19,8 +19,8 @@
 
 //-----------------------------------------------------------------------------------------------------------
 // As index increases, distance increases and y-coordinates decrease
-int table_size = 4;
-double distances[] = {0, 1, 2, 3, 5, 6, 7};
+int table_size = 8;
+double distances[] = {0, 1, 2, 3, 4, 5, 6, 7};
 double small_yCoord[] = {148.0, 103.2, 72.0, 50.4, 34.0, 20.8, 10.8, 3.0};
 double medium_yCoord[] = {230.0, 138.3, 75.0, 28.3};
 double big_yCoord[] = {690.0, 415.0, 225.0, 85.0};
@@ -38,7 +38,9 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 		// As index increases, distance increases and y-coordinates decrease
 		if( (yCoord < yCoordArr[i]) && (yCoord > yCoordArr[i + 1]) )
                 { 
-			distance = ((yCoord - yCoordArr[i+1])/*How much over in percentage*//(yCoordArr[i] - yCoordArr[i+1]))*(distances[i+1] - distances[i])/*finds distance over*/ + distances[i+1]/*distance before*/;
+			distance = ((yCoord - yCoordArr[i+1])/*How much over in percentage*/
+                        /(yCoordArr[i] - yCoordArr[i+1]))*(distances[i+1] - distances[i])
+                        /*finds distance over*/ + distances[i]/*distance before*/;
 		}
 	}
 	return distance;
@@ -56,13 +58,7 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 //   if(xt > xb){
 //        //leaning towards right
 //        angle = 90 - atan((xt-xb)/(yt-yb));
-//        angle = angle * -1;
-//    } else if(xb > xt){
-//        angle = 90 - atan((xb-xt)/(yt-yb));
-//    } else{
-//        angle = 0;
-//    }
-
+//        angle = angle * -1;o
     // MK 2019-03-07 version
 double calc_Angle(double xt, double yt, double xb, double yb){
 
@@ -283,6 +279,14 @@ int main()
                                                         std::cout << "ymin2 = (" << y_min2<< ")" << std::endl;
                                                         std::cout << "ind_min1 = (" << ind_min1 << ")" << std::endl;
                                                         std::cout << "ind_min2 = (" << ind_min2 << ")" << std::endl;
+                                                        std::cout << "Distance = (" <<  target_Distance << ")" << std::endl;
+                                                        std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
+                                                        std::cout << "Distance[120] = (" << calc_Distance(120, small_yCoord, 4) << ")" << std::endl;
+                                                        std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
+                                                        std::cout << "Distance[90] = (" << calc_Distance(90, small_yCoord, 4) << ")" << std::endl;
+                                                        std::cout << "Distance[999] = (" << calc_Distance(999, small_yCoord, 4) << ")" << std::endl;
+                                                        std::cout << "Distance[148] = (" << calc_Distance(148, small_yCoord, 4) << ")" << std::endl;
+                                                        std::cout << "Distance[103] = (" << calc_Distance(103, small_yCoord, 4) << ")" << std::endl;
                                                 }
                                                 // store the top line midpoint
                                                 topmidpoint[count].x    = 0.5*(rect_points[ind_min1].x + rect_points[ind_min2].x );
