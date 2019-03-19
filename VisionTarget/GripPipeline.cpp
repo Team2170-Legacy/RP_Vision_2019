@@ -1,5 +1,5 @@
 #include "GripPipeline.h"
-
+#include "VisionTarget_Calibration.h"
 namespace grip {
 
 GripPipeline::GripPipeline() {
@@ -11,9 +11,9 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step HSV_Threshold0:
 	//input
 	cv::Mat hsvThresholdInput = source0;
-	double hsvThresholdHue[] = {67.98561151079136, 104.74402730375427};
-	double hsvThresholdSaturation[] = {158.22841726618705, 255.0};
-	double hsvThresholdValue[] = {73.38129496402877, 130.98122866894198};
+	double hsvThresholdHue[] = {H_min, H_max};
+	double hsvThresholdSaturation[] = {S_min, S_max};
+	double hsvThresholdValue[] = {V_min, V_max};
 	hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, this->hsvThresholdOutput);
 	//Step Find_Contours0:
 	//input
