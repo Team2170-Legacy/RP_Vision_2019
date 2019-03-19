@@ -11,11 +11,14 @@
 #include <thread>
 #include <chrono>
 
+
 #include "GripPipeline.h"
 #include <string>
 #include <iostream>
 #include <fstream>
-
+#include "networktables/NetworkTable.h"
+#include "networktables/NetworkTableEntry.h"
+#include "networktables/NetworkTableInstance.h"
 
 bool save_image;
 int counter = 0;
@@ -32,17 +35,20 @@ void command_input()
 		{
 			save_image = true;
 		}
-		else 
+		else  {
 		 cExposure = input_num;
+		 std::cout << " Setting exposure to " +  std::to_string(cExposure) << std::endl;
+		}
 	 }
 }
 
 int main(){
 	std::thread console_thread(command_input);
 	// camera setup
-	int cWidth = 320;
-	int cHeight = 240;
+	int cWidth = 160;
+	int cHeight = 120;
 	int cWhiteBalance = 5100;
+	//frc::CameraServer::kBasePort = 5800;
 	cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
 	camera.SetResolution(cWidth,cHeight);
 	camera.SetExposureManual(cExposure);
@@ -57,10 +63,15 @@ int main(){
 		{
 			if( save_image == true) 
 	{
-		std::cout <<  "Saving Image:" << std::endl;
-		cv::imwrite("/home/pi/RP_Vision_2019/Calibration/images/exposure" +  std::to_string(cExposure) + "_imageNum" + std::to_string(counter) + ".jpg",source);
-		std::cout << "/home/pi/RP_Vision_2019/Calibration/images/exposure"+  std::to_string(cExposure)  + "_imageNum" + std::to_string(counter) + ".jpg" << std::endl;
 		counter++;
+		std::cout <<  "Saving Image:" << std::endl;
+		cv::imwrite("/home/pi/Calibration/images/" + std::to_string(counter) + ".jpg",source);
+		std::cout << "/home/pi/Calibration/images/"+  std::to_string(counter) + ".jpg" << std::endl;
+		std::ofstream myfile;
+		myfile.open ("/home/pi/Calibration/images/"+ std::to_string(counter) + ".txt");
+		myfile << "Exposure: " + std::to_string(cExposure) + "\n";
+		myfile.close();
+		
 	}
 	save_image = false;
 

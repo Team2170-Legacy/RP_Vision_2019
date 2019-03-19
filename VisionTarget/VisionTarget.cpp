@@ -321,8 +321,8 @@ int main() {
 	grip::GripPipeline pipeline;
 	
 	// camera setup
-	int cWidth = 320;
-    int cHeight = 240;
+	int cWidth = 160;
+    int cHeight = 120;
 	//frc::CameraServer::kBasePort = 5800;
 
 	int cExposure = 2;
