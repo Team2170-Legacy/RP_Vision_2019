@@ -23,7 +23,7 @@
 
 //----------------------------------------------------------------------------------------------
 
-bool		debug = false; // set to true for debugging: additional video streams etc.
+bool		debug = true; // set to true for debugging: additional video streams etc.
 
 // data about locked contours, updated whenever a target is locked on too
 double 	targetWidth = 0; // width of bounding box of locked vision targets
@@ -50,7 +50,6 @@ void write_log(string message)
 //----------------------------------------------------------------------------------------------
 
 double calc_Angle(double xt, double yt, double xb, double yb) {
-
     double angle = 0;
     double del_x = xt - xb;
     double del_y = yt - yb;
@@ -118,15 +117,14 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 if(updateLockedTargetData) {  
 	
 	float y_min1 = 100000;
-	int ind_min1;
+	int ind_min1 = 0;
 	float y_min2 = 100000;
-	int ind_min2;
-	float y_max1;
-	int ind_max1;
-	float y_max2;
-	int ind_max2;
+	int ind_min2 = 0;
+	float y_max1 = 0;
+	int ind_max1 = 0;
+	float y_max2 = 0;
+	int ind_max2 = 0;
 	
-std::cout << ("checkpoint") <<std::endl;
 	for( int j = 0; j < 4; j++ )
 	{
 			if (corners[j].y < y_min1)
@@ -152,7 +150,7 @@ std::cout << ("checkpoint") <<std::endl;
 					ind_max1        = j;
 			}
 	}
-	// find NEXT highest y-coord point
+	// find NEXT lowest y-coord point
 	for( int j = 0; j < 4; j++ )
 	{
 			if ( (corners[j].y > y_max2) && ( j != ind_max1 ) )
@@ -161,13 +159,13 @@ std::cout << ("checkpoint") <<std::endl;
 					ind_max2        = j;
 			}
 	}
-std::cout << ("checkpoint2") <<std::endl;
+
+
 	float bx = (corners[ind_max1].x+corners[ind_max2].x)/2;
 	float by = (corners[ind_max1].y+corners[ind_max2].y)/2;
 	float tx = (corners[ind_min1].x+corners[ind_min2].x)/2;
 	float ty = (corners[ind_min1].y+corners[ind_min2].y)/2;
-contourAngles[c] = calc_Angle(tx, ty, bx, by);
-std::cout << ("checkpoint3") <<std::endl;
+    contourAngles[c] = calc_Angle(tx, ty, bx, by);
 }
 
 }
@@ -209,7 +207,6 @@ std::cout << ("checkpoint3") <<std::endl;
 tapeAngleDifference = leftTapeAngle - rightTapeAngle;
 }
 
-std::cout << ("checkpoint4") <<std::endl;
 	return drawing;
 } //cv::Mat detect_rectangles
 
@@ -289,15 +286,13 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 //----------------------------------------------------------------------------------------------
 // given height of the bounding box of a locked target calulates the distance in feet the robot is away from the target
 double calcDistance(double height){
-		double yCoordArr [11] = {20, 22, 24, 27, 30, 36, 43, 55, 62, 70, 134};
+	std::cout << "ContourHeight: " + std::to_string(height)  << std::endl;
+		double yCoordArr [11] = {8, 9, 10, 11, 13, 15, 18, 22, 31, 50, 160};
 		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
 		double yCoord = height;
 	int arrSize = 11;
 	double distance = 0;
 	if( yCoord > yCoordArr[arrSize - 1]){
-		//too close
-	 std::cout << "Robot To Close, Height:" << std::endl;
-	 std::cout << height << std::endl;
 		return 0;
 	}
 		if( yCoord < yCoordArr[0]){
@@ -324,7 +319,6 @@ int main() {
 	// camera setup
 	int cWidth = 160;
     int cHeight = 120;
-	//frc::CameraServer::kBasePort = 5800;
 
 	int cExposure = 2;
 	int cWhiteBalance = 5100;
@@ -337,11 +331,8 @@ int main() {
 	camera.SetExposureManual(cExposure);
 	camera.SetWhiteBalanceManual(cWhiteBalance);
 	cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
-	// MK 03/05/2019 Can the line below be commented out so that we for sure don't send any additional
-	// video streams when debug = false?
    
 	cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("hsvoutput", cWidth, cHeight);
-
 	cs::CvSource outputStreamRectStd = frc::CameraServer::GetInstance()->PutVideo("countouroutput", cWidth, cHeight);
 	cv::Mat source;
 	cv::Mat output;
@@ -383,6 +374,7 @@ int main() {
 	//exposure.addListener(event -> {cexposure_temp = event.value.getValue();},
 	//	EntryListenerFlags.kNew | EntryListenerFlags.kUpdate);
 
+
 	//----------------------------------------------------------------------------------------------
 	while (true) {
 		cvSink.GrabFrame(source);
@@ -397,7 +389,7 @@ int main() {
 			};
 			contours_ptr = pipeline.GetFilterContoursOutput();
 			contours = *contours_ptr;
-			if (!contours.empty()) {
+			if (contours.size()>=2) {
 				cv::Mat rect_output = lock_target(source, contours, cWidth);
 				outputStreamRectStd.PutFrame(rect_output);
 
@@ -405,7 +397,9 @@ int main() {
 			else
 			{
 				targetLocked = false;
+				target_locked.SetBoolean(false);
 				outputStreamRectStd.PutFrame(source);
+				distance_to_target.SetDouble(0);
 				x_target_error.SetDouble(0);
 				left_tape_height.SetDouble(0);
 				right_tape_height.SetDouble(0);
