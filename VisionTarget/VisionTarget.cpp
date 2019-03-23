@@ -27,6 +27,8 @@ bool		debug = false; // set to true for debugging: additional video streams etc.
 
 int cWidth = 160; // camera width
 float contourDetectionX = cWidth/2;; // the contour closest to this x is locked on to
+ bool automove_flag = false; // whether or not automove is on            
+
 
 // data about locked contours, updated whenever a target is locked on too
 double 	targetWidth = 0; // width of bounding box of locked vision targets
@@ -322,6 +324,11 @@ tapeAngleDifference = leftTapeAngle + rightTapeAngle;
 
 cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
+	if(!automove_flag)
+	contourDetectionX = cWidth/2;
+	// draws a small blue circle where the contour detection point is
+	cv::circle(source, cv::Point2f(contourDetectionX, 60), 3, cv::Scalar(255, 0, 0));
+
 	int num_contours = contours.size();
 	int midpointBox[num_contours];
 	std::vector<cv::Rect> boundingBoxArray;
@@ -471,8 +478,11 @@ int main() {
 	nt::NetworkTableEntry exposure =  table->GetEntry("exposure");
 	exposure.SetDouble(cExposure);
 
-
+    nt::NetworkTableEntry automove = table->GetEntry("automove");
+    automove.SetBoolean(false);
+   
 	while (true) {
+		automove_flag = automove.GetBoolean("automove");
 		cvSink.GrabFrame(source);
 		if (source.rows > 0) {
 			pipeline.Process(source);
@@ -519,13 +529,15 @@ int main() {
 				std::cout << rightTapeAngle << std::endl;
 				*/
 
+                if(debug)
+				 {
 			    std::cout << "tapeAreaError: ";
 				std::cout << 1-(rightTapeArea/leftTapeArea) << std::endl;
 				std::cout << "leftTapeArea: ";
 				std::cout << leftTapeArea << std::endl;
 				std::cout << "rightTapeArea: ";
 				std::cout << rightTapeArea << std::endl;
-
+				}
 
 			}
 			else {
