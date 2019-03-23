@@ -25,6 +25,9 @@
 
 bool		debug = false; // set to true for debugging: additional video streams etc.
 
+int cWidth = 160; // camera width
+float contourDetectionX = cWidth/2;; // the contour closest to this x is locked on to
+
 // data about locked contours, updated whenever a target is locked on too
 double 	targetWidth = 0; // width of bounding box of locked vision targets
 double 	targetHeight = 0; // height of bounding box of locked vision targets
@@ -158,7 +161,9 @@ if(rtAngle>=0 & ltAngle<=0)
 return true;
 
 return false;
-}
+}//bool contoursAreValid
+
+//----------------------------------------------------------------------------------------------
 
 
 
@@ -289,6 +294,7 @@ if(updateLockedTargetData) {
 	 targetWidth = (double)(MaxX - MinX);
 	 targetHeight = (double)(MaxY - MinY);
 	 targetLocked = true;
+	 contourDetectionX = targetCenterX;
 	if(contourMinXs[0]<contourMinXs[1]) {
 	leftTapeHeight = contourHeights[0];
 	rightTapeHeight = contourHeights[1];
@@ -313,7 +319,8 @@ tapeAngleDifference = leftTapeAngle + rightTapeAngle;
 
 //----------------------------------------------------------------------------------------------
 
-cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours, int width)
+
+cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
 	int num_contours = contours.size();
 	int midpointBox[num_contours];
@@ -336,7 +343,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		
 		int differenceMidpoints[num_contours];
 		for (int count = 0; count < num_contours; count++) {
-			differenceMidpoints[count] = abs((width / 2) - midpointBox[count]);
+			differenceMidpoints[count] = abs((contourDetectionX) - midpointBox[count]);
 		}
 
 		for (int count = 1; count < num_contours; count++) {
@@ -366,7 +373,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		std::vector<std::vector<cv::Point>> center_contours;
 		center_contours.push_back(contours.at(minimum));
 		center_contours.push_back(contours.at(minimum2));
-	    if(contoursAreValid(center_contours))
+	    if(contoursAreValid(center_contours)) 
 		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
 		
 	}
@@ -419,7 +426,6 @@ int main() {
 	grip::GripPipeline pipeline;
 	
 	// camera setup
-	int cWidth = 160;
     int cHeight = 120;
 	int cExposure = 15;
 	int cExposure_temp  = cExposure;
@@ -479,9 +485,8 @@ int main() {
 			contours_ptr = pipeline.GetFilterContoursOutput();
 			contours = *contours_ptr;
 			
-			if (contours.size()>=2) {
-			std::cout << "Num Contours Found" + std::to_string(contours.size()) <<std::endl; 
-				cv::Mat rect_output = lock_target(source, contours, cWidth);
+			if (contours.size()>=2) { 
+				cv::Mat rect_output = lock_target(source, contours);
 				outputStreamRectStd.PutFrame(rect_output);
 
 			}
@@ -524,6 +529,7 @@ int main() {
 
 			}
 			else {
+				contourDetectionX = cWidth/2;
 				outputStreamRectStd.PutFrame(source);
 			    distance_to_target.SetDouble(0);
 				x_target_error.SetDouble(0);
