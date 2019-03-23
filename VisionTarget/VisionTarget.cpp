@@ -194,6 +194,7 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	float contourMinXs [2] = {0 , 0};
 	for (int c = 0; c < 2; c++)
 	{
+		if(debug)
        std::cout << "Getting minAreaRect for Contour with area " + std::to_string(cv::contourArea(contours[c])) << std::endl;
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
 		contourAreas[c] = cv::contourArea(contours[c]);
@@ -326,7 +327,9 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 {
 	if(!automove_flag)
 	contourDetectionX = cWidth/2;
+	
 	// draws a small blue circle where the contour detection point is
+	// if(debug)
 	cv::circle(source, cv::Point2f(contourDetectionX, 60), 3, cv::Scalar(255, 0, 0));
 
 	int num_contours = contours.size();
@@ -404,6 +407,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 //----------------------------------------------------------------------------------------------
 // given height of the bounding box of a locked target calulates the distance in feet the robot is away from the target
 double calcDistance(double height){
+	if(debug)
 	std::cout << "ContourHeight: " + std::to_string(height)  << std::endl;
 		double yCoordArr [11] = {8, 9, 10, 11, 13, 15, 18, 22, 31, 50, 160};
 		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
@@ -437,15 +441,37 @@ int main() {
 	int cExposure = 15;
 	int cExposure_temp  = cExposure;
 	int cWhiteBalance = 5100;
+	int fps = 30;
 
-	cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture(1);
+    cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0", 1);
+    cs::UsbCamera camera = *camera_pointer;
 	camera.SetResolution(cWidth, cHeight);
 	camera.SetExposureManual(cExposure);
 	camera.SetWhiteBalanceManual(cWhiteBalance);
-	cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
+
+	cs::MjpegServer *mjpegServer1_pointer = new cs::MjpegServer("Forward Camera", 5805);
+    cs::MjpegServer mjpegServer1 = *mjpegServer1_pointer;
+    mjpegServer1.SetSource(camera);
+
+	cs::CvSink *cvSink_pointer = new cs::CvSink("Vision Target USB Camera");
+    cs::CvSink cvSink = *cvSink_pointer;
+    cvSink.SetSource(camera);
    
-	cs::CvSource outputStreamStd = frc::CameraServer::GetInstance()->PutVideo("hsvoutput", cWidth, cHeight);
-	cs::CvSource outputStreamRectStd = frc::CameraServer::GetInstance()->PutVideo("countouroutput", cWidth, cHeight);
+    cs::MjpegServer *mjpegServer2_pointer = new cs::MjpegServer("HSV Stream", 5806);
+    cs::MjpegServer mjpegServer2 = *mjpegServer2_pointer;
+
+    cs::MjpegServer *mjpegServer3_pointer = new cs::MjpegServer("Vision Target Output Stream", 5807);
+    cs::MjpegServer mjpegServer3 = *mjpegServer3_pointer;
+
+    cs::CvSource *outputStreamStd_pointer = new cs::CvSource("Vision Target", cs::VideoMode::PixelFormat::kMJPEG, cWidth, cHeight, fps);
+    cs::CvSource outputStreamStd = *outputStreamStd_pointer;
+    mjpegServer3.SetSource(outputStreamStd);
+
+    cs::CvSource *outputStreamHSV_pointer = new cs::CvSource("HSV Target Stream", cs::VideoMode::PixelFormat::kMJPEG, cWidth, cHeight, fps);
+    cs::CvSource outputStreamHSV = *outputStreamHSV_pointer;
+    mjpegServer2.SetSource(outputStreamHSV);
+
+
 	cv::Mat source;
 	cv::Mat output;
 	cv::Mat* output_ptr;
@@ -490,14 +516,14 @@ int main() {
 			{
 				hsv_mat_ptr = pipeline.GetHsvThresholdOutput();
 				hsv_mat = *hsv_mat_ptr;
-				outputStreamStd.PutFrame(hsv_mat);
+				outputStreamHSV.PutFrame(hsv_mat);
 			};
 			contours_ptr = pipeline.GetFilterContoursOutput();
 			contours = *contours_ptr;
 			
 			if (contours.size()>=2) { 
 				cv::Mat rect_output = lock_target(source, contours);
-				outputStreamRectStd.PutFrame(rect_output);
+				outputStreamStd.PutFrame(rect_output);
 
 			}
 			else
@@ -542,7 +568,7 @@ int main() {
 			}
 			else {
 				contourDetectionX = cWidth/2;
-				outputStreamRectStd.PutFrame(source);
+				outputStreamStd.PutFrame(source);
 			    distance_to_target.SetDouble(0);
 				x_target_error.SetDouble(0);
 				left_tape_height.SetDouble(0);
