@@ -30,7 +30,7 @@ double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
 	int arrSize = hArrSize;
 	double distance = 0;
 	if(yCoord > yCoordArr[0] || yCoord < yCoordArr[arrSize]){
-		//too far or too close  
+		//too far or too close   
 		return -1;
 	}
 	for(int i = 0; i < arrSize - 1; i++){
@@ -80,6 +80,19 @@ double calc_Angle(double xt, double yt, double xb, double yb){
     return angle;
 }
 
+int test_Distance(double yCoord)
+
+{
+
+    std::cout << "yCoord = " << yCoord << ",   d =" << calc_Distance(yCoord, small_yCoord, 8) << std::endl;
+
+   
+
+}
+
+
+
+
 //-----------------------------------------------------------------------------------------------------------
 int main()
 
@@ -110,11 +123,11 @@ int main()
 
         // set up RAW camera stream on port 5800
 
-        cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0",0);
+        cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 1",1);
          cs::UsbCamera camera = *camera_pointer;
 
-        //camera.SetExposureManual(69);
-        camera.SetExposureManual(6);
+        camera.SetExposureManual(52);
+        //camera.SetExposureManual(6);
 
         camera.SetResolution(width, height);
         cs::MjpegServer *mjpegServer1_pointer = new cs::MjpegServer("serve_USB Camera 0", 5800);
@@ -193,7 +206,8 @@ int main()
         nt::NetworkTableEntry fl_target_Distance_nt     = table->GetEntry("fl_target_Distance");
         nt::NetworkTableEntry fl_target_lock            = table->GetEntry("fl_target_lock");
         nt::NetworkTableEntry fl_target_angle_nt        = table->GetEntry("fl_target_angle");
-
+        nt::NetworkTableEntry fl_target_x               = table->GetEntry("fl_target_x");
+        nt::NetworkTableEntry fl_target_y               = table->GetEntry("fl_target_y");
         nt::NetworkTableEntry automove                  = table->GetEntry("automove");
         automove.SetBoolean(false);
         bool automove_flag = false;                     // true if automove button is being pressed
@@ -202,7 +216,8 @@ int main()
         fl_target_Distance_nt.SetDouble(target_Distance);
         fl_target_lock.SetDouble(target_lock);
         fl_target_angle_nt.SetDouble(target_angle);
-
+        fl_target_x.SetDouble(target_x);
+        fl_target_y.SetDouble(target_y);
         //-----------------------------------------------------------------------------------------------------------
         while (!run_once_flag) // loop forever
         {
@@ -319,8 +334,10 @@ int main()
                                                 // debug with overrides
                                                 //ind_min1=1;
                                                 //ind_min2=2;
+  
 
  
+
                                                 if ( debug )
                                                 {
                                                         std::cout << "rect_points[0] = " << rect_points[0] << std::endl;
@@ -332,13 +349,44 @@ int main()
                                                         std::cout << "ind_min1 = (" << ind_min1 << ")" << std::endl;
                                                         std::cout << "ind_min2 = (" << ind_min2 << ")" << std::endl;
                                                         std::cout << "Distance = (" <<  target_Distance << ")" << std::endl;
-                                                        std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
-                                                        std::cout << "Distance[120] = (" << calc_Distance(120, small_yCoord, 4) << ")" << std::endl;
-                                                        std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
-                                                        std::cout << "Distance[90] = (" << calc_Distance(90, small_yCoord, 4) << ")" << std::endl;
-                                                        std::cout << "Distance[999] = (" << calc_Distance(999, small_yCoord, 4) << ")" << std::endl;
-                                                        std::cout << "Distance[148] = (" << calc_Distance(148, small_yCoord, 4) << ")" << std::endl;
-                                                        std::cout << "Distance[103] = (" << calc_Distance(103, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[120] = (" << calc_Distance(120, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[90] = (" << calc_Distance(90, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[999] = (" << calc_Distance(999, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[148] = (" << calc_Distance(148, small_yCoord, 4) << ")" << std::endl;
+                                                        // std::cout << "Distance[103] = (" << calc_Distance(103, small_yCoord, 4) << ")" << std::endl;
+
+                                                        test_Distance(153);
+
+                                                        test_Distance(148.0);
+
+                                                        test_Distance(147.0);
+
+                                                        test_Distance(104);
+
+                                                        test_Distance(103.2);
+
+                                                        test_Distance(103);
+
+                                                        test_Distance(75);
+
+                                                        test_Distance(40);
+
+                                                        test_Distance(25);
+
+                                                        test_Distance(15);
+
+                                                        test_Distance(6);
+
+                                                        test_Distance(4.0);
+
+                                                        test_Distance(3.0);
+
+                                                        test_Distance(2);
+
+
+
                                                 }
                                                 // store the top line midpoint
                                                 topmidpoint[count].x    = 0.5*(rect_points[ind_min1].x + rect_points[ind_min2].x );
@@ -486,6 +534,8 @@ int main()
 	                        fl_target_Distance_nt.SetDouble(target_Distance);
                                 fl_target_lock.SetDouble(target_lock);
         	                fl_target_angle_nt.SetDouble(target_angle);
+                                fl_target_x.SetDouble(target_x);
+                                fl_target_y.SetDouble(target_y);
 			}
                         
                         
