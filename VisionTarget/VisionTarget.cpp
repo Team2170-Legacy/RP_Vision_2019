@@ -194,8 +194,9 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	float contourMinXs [2] = {0 , 0};
 	for (int c = 0; c < 2; c++)
 	{
-		if(debug)
+		if(debug) {
        std::cout << "Getting minAreaRect for Contour with area " + std::to_string(cv::contourArea(contours[c])) << std::endl;
+		}
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
 		contourAreas[c] = cv::contourArea(contours[c]);
 		cv::Point2f corners[4];
@@ -334,9 +335,11 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 
 	int num_contours = contours.size();
 	int midpointBox[num_contours];
+	int differenceMidpoints[num_contours];
 	std::vector<cv::Rect> boundingBoxArray;
 	int minimum = 0;
 	int minimum2 = 0;
+
 	if (num_contours >= 2) 
 	{
 
@@ -351,7 +354,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 			midpointBox[count] = midx;
 		}
 		
-		int differenceMidpoints[num_contours];
+		
 		for (int count = 0; count < num_contours; count++) {
 			differenceMidpoints[count] = abs((contourDetectionX) - midpointBox[count]);
 		}
@@ -369,9 +372,11 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 	}
 	}
 	else {
+		targetLocked = false;
 		return source;
 	}
-	if (num_contours > 2) {
+	if (num_contours > 2) 
+	{
 		for (int count = 0; count < num_contours - 1; count += 2) {
 				std::vector<std::vector<cv::Point>> all_contours;
 				all_contours.push_back(contours.at(count));
@@ -383,8 +388,36 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		std::vector<std::vector<cv::Point>> center_contours;
 		center_contours.push_back(contours.at(minimum));
 		center_contours.push_back(contours.at(minimum2));
-	    if(contoursAreValid(center_contours)) 
+	    if(contoursAreValid(center_contours)) {
 		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
+		}
+		else {
+			int groupDifferences[num_contours];
+			for(int i = 0; i<num_contours; i++ ) {
+				groupDifferences[i] = INT_MAX;
+			}
+			for (int count = 0; count < num_contours - 1; count += 2) {
+				std::vector<std::vector<cv::Point>> grouped_contours;
+				grouped_contours.push_back(contours.at(count));
+				grouped_contours.push_back(contours.at(count + 1));
+				if(contoursAreValid(grouped_contours)) {
+				groupDifferences[count] = (differenceMidpoints[count] + differenceMidpoints[count+1])/2;
+				 }
+			}
+			int dminIndex = 0;
+			for(int i = 0; i<num_contours; i++ ) {
+				if(groupDifferences[i]<groupDifferences[dminIndex])
+				{
+				dminIndex = i;
+				}
+			}
+			
+		std::vector<std::vector<cv::Point>> centergrouped_contours;
+		centergrouped_contours.push_back(contours.at(dminIndex));
+		centergrouped_contours.push_back(contours.at(dminIndex+1));
+		source = detect_rectangles(source, centergrouped_contours, cv::Scalar(0, 0, 255), 4, true);
+
+		}
 		
 	}
 	else if (num_contours == 2)
@@ -393,12 +426,9 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		center_contours.push_back(contours.at(0));
 		center_contours.push_back(contours.at(1));
 		if(contoursAreValid(center_contours))
+		{
 		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
-	}
-	else {
-
-	targetLocked = false;
-		return source;
+		}
 	}
 
 	return source;
@@ -407,8 +437,9 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 //----------------------------------------------------------------------------------------------
 // given height of the bounding box of a locked target calulates the distance in feet the robot is away from the target
 double calcDistance(double height){
-	if(debug)
+	if(debug) {
 	std::cout << "ContourHeight: " + std::to_string(height)  << std::endl;
+	}
 		double yCoordArr [11] = {8, 9, 10, 11, 13, 15, 18, 22, 31, 50, 160};
 		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
 		double yCoord = height;
