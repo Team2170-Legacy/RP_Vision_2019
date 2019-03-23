@@ -1,0 +1,187 @@
+/******************************************************************************
+
+ 
+
+                              Online C++ Compiler.
+
+               Code, Compile, Run and Debug C++ program online.
+
+Write your code in this editor and press "Run" button to compile and execute it.
+
+ 
+
+*******************************************************************************/
+
+ 
+
+#include <iostream>
+
+ 
+
+using namespace std;
+
+ 
+
+int table_size = 8;
+
+double distances[] =    {0,     1,      2,      3,      4,      5,      6,      7};
+
+double small_yCoord[] = {148.0, 103.2,  72.0,   50.4,   34.0,   20.8,   10.8,   3.0};
+
+ 
+
+//-----------------------------------------------------------------------------------------------------------
+
+double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
+
+ 
+
+              double distance = 0;
+
+              double span_perc = 0;
+
+              if(yCoord > yCoordArr[0] || yCoord < yCoordArr[hArrSize-1]){
+
+                           //too far or too close 
+
+                           return -1;
+
+              }
+
+              for(int i = 0; i < hArrSize - 1; i++){
+
+                           // Search from highest distance to lowest distance
+
+                           // As index increases, distance increases and y-coordinates decrease
+
+                           if( (yCoord <= yCoordArr[i]) && (yCoord >= yCoordArr[i + 1]) )
+
+        {
+
+            span_perc   = ((yCoord - yCoordArr[i+1])/*How much over in percentage*/
+
+                        /(yCoordArr[i] - yCoordArr[i+1]));
+
+                       
+
+                                         distance    = -span_perc*(distances[i+1] - distances[i])
+
+                        /*finds distance over*/ + distances[i+1]/*distance before*/;
+
+                           }
+
+              }
+
+              return distance;
+
+ 
+
+ 
+
+}
+
+ 
+
+int test_Distance(double yCoord)
+
+{
+
+    cout << "yCoord = " << yCoord << ",   d =" << calc_Distance(yCoord, small_yCoord, 8) << endl;
+
+   
+
+}
+
+ 
+
+int main()
+
+{
+
+    test_Distance(153);
+
+    test_Distance(148.0);
+
+    test_Distance(147.0);
+
+    test_Distance(104);
+
+    test_Distance(103.2);
+
+    test_Distance(103);
+
+    test_Distance(75);
+
+    test_Distance(40);
+
+    test_Distance(25);
+
+    test_Distance(15);
+
+    test_Distance(6);
+
+    test_Distance(4.0);
+
+    test_Distance(3.0);
+
+    test_Distance(2);
+
+
+ //   cout << calc_Distance(153, small_yCoord, 8) << endl;
+
+//   cout << calc_Distance(148.0, small_yCoord, 8) << endl;
+
+//   cout << calc_Distance(147.0, small_yCoord, 8) << endl;
+
+//   cout << calc_Distance(4.0, small_yCoord, 8) << endl;
+
+//   cout << calc_Distance(3.0, small_yCoord, 8) << endl;
+
+//   cout << calc_Distance(2, small_yCoord, 8) << endl;
+
+ 
+
+    return 0;
+
+}
+
+ 
+
+ 
+
+Output is:
+
+ 
+
+yCoord = 153,   d =-1
+
+yCoord = 148,   d =0
+
+yCoord = 147,   d =0.0223214
+
+yCoord = 104,   d =0.982143
+
+yCoord = 103.2,   d =1
+
+yCoord = 103,   d =1.00641
+
+yCoord = 75,   d =1.90385
+
+yCoord = 40,   d =3.63415
+
+yCoord = 25,   d =4.68182
+
+yCoord = 15,   d =5.58
+
+yCoord = 6,   d =6.61538
+
+yCoord = 4,   d =6.87179
+
+yCoord = 3,   d =7
+
+yCoord = 2,   d =-1
+
+ 
+
+ 
+

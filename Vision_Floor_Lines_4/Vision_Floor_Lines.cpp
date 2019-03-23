@@ -26,28 +26,76 @@ double medium_yCoord[] = {230.0, 138.3, 75.0, 28.3};
 double big_yCoord[] = {690.0, 415.0, 225.0, 85.0};
 
 //-----------------------------------------------------------------------------------------------------------
+// double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
+// 	int arrSize = hArrSize;
+// 	double distance = 0;
+// 	if(yCoord > yCoordArr[0] || yCoord < yCoordArr[arrSize-1]){
+// 		//too far or too close   
+// 		return -2;
+// 	}
+// 	for(int i = 0; i < arrSize - 1; i++){
+// 		// Search from highest distance to lowest distance
+// 		// As index increases, distance increases and y-coordinates decrease
+// 		if( (yCoord < yCoordArr[i]) && (yCoord > yCoordArr[i + 1]) )
+//                 { 
+// 			distance = ((yCoord - yCoordArr[i+1])/*How much over in percentage*/
+//                         /(yCoordArr[i] - yCoordArr[i+1]))*(distances[i+1] - distances[i])
+//                         /*finds distance over*/ + distances[i]/*distance before*/;
+// 		}
+// 	}
+// 	return distance;
+
+
+// }
+
 double calc_Distance(double yCoord, double yCoordArr[], int hArrSize){
-	int arrSize = hArrSize;
-	double distance = 0;
-	if(yCoord > yCoordArr[0] || yCoord < yCoordArr[arrSize]){
-		//too far or too close   
-		return -1;
-	}
-	for(int i = 0; i < arrSize - 1; i++){
-		// Search from highest distance to lowest distance
-		// As index increases, distance increases and y-coordinates decrease
-		if( (yCoord < yCoordArr[i]) && (yCoord > yCoordArr[i + 1]) )
-                { 
-			distance = ((yCoord - yCoordArr[i+1])/*How much over in percentage*/
-                        /(yCoordArr[i] - yCoordArr[i+1]))*(distances[i+1] - distances[i])
-                        /*finds distance over*/ + distances[i]/*distance before*/;
-		}
-	}
-	return distance;
 
+ 
 
-}
+              double distance = 0;
 
+              double span_perc = 0;
+
+               if(yCoord > yCoordArr[0] || yCoord < yCoordArr[hArrSize-1]){
+
+                           //too far or too close 
+
+                           return -1;
+
+              } 
+
+       /*  if(yCoord >= 3 && yCoord <= 148){ */
+
+              for(int i = 0; i < hArrSize - 1; i++){
+
+                        // Search from highest distance to lowest distance
+
+                        // As index increases, distance increases and y-coordinates decrease
+
+                        if( (yCoord <= yCoordArr[i]) && (yCoord >= yCoordArr[i + 1]) ){
+
+                                span_perc   = ((yCoord - yCoordArr[i+1])/*How much over in percentage*/
+
+                                /(yCoordArr[i] - yCoordArr[i+1]));
+
+                    /*    std::cout << "yCoord = " << yCoord << std::endl;
+                std::cout << "Distancebutnot" << -span_perc*(distances[i+1] - distances[i]) << std::endl; */
+
+                                        distance    = -span_perc*(distances[i+1] - distances[i])
+
+                                        /*finds distance over*/ + distances[i+1]/*distance before*/;
+
+                        }
+                
+              }
+
+              return distance;
+        }
+/* 
+        return -20393;
+ */
+ 
+//}
 
 //-----------------------------------------------------------------------------------------------------------
 // original 2019-03-05 version
@@ -123,10 +171,10 @@ int main()
 
         // set up RAW camera stream on port 5800
 
-        cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 1",1);
+        cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0",0);
          cs::UsbCamera camera = *camera_pointer;
 
-        camera.SetExposureManual(52);
+        camera.SetExposureManual(48);
         //camera.SetExposureManual(6);
 
         camera.SetResolution(width, height);
@@ -188,7 +236,7 @@ int main()
         int             target_y = 0;
         int             target_x = 0;
         int             target_error = 0;
-        int             target_Distance = 0;
+        double             target_Distance = 0;
         double          target_angle = 0;
         uint64_t        grab_Frame_Status = 0;
 
@@ -235,6 +283,40 @@ int main()
                 if (debug)
                         std::cout << "Grab Frame Status: " << grab_Frame_Status << std::endl;
 
+                if ( debug )
+                         {
+                                                       
+                             test_Distance(60);
+
+                             test_Distance(148.0);
+
+                             test_Distance(147.0);
+
+                             test_Distance(104);
+
+                             test_Distance(103.2);
+
+                             test_Distance(103);
+
+                             test_Distance(75);
+
+                             test_Distance(40);
+
+                             test_Distance(25);
+
+                             test_Distance(15);
+
+                             test_Distance(6);
+
+                             test_Distance(4.0);
+
+                             test_Distance(3.0);
+
+                             test_Distance(2);
+
+
+
+                                }
                 if (grab_Frame_Status > 0)
                 {
                         output = source;
@@ -349,6 +431,8 @@ int main()
                                                         std::cout << "ind_min1 = (" << ind_min1 << ")" << std::endl;
                                                         std::cout << "ind_min2 = (" << ind_min2 << ")" << std::endl;
                                                         std::cout << "Distance = (" <<  target_Distance << ")" << std::endl;
+
+                                                        
                                                         // std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
                                                         // std::cout << "Distance[120] = (" << calc_Distance(120, small_yCoord, 4) << ")" << std::endl;
                                                         // std::cout << "Distance[119] = (" << calc_Distance(119, small_yCoord, 4) << ")" << std::endl;
@@ -509,7 +593,7 @@ int main()
                                         //target_Distance = calc_Distance(target_y, small_yCoord,4);
 
                                         // for 320x240 images
-                                        target_Distance = calc_Distance(target_y, small_yCoord,4);
+                                        target_Distance = calc_Distance(target_y, small_yCoord,8);
                                         // MK TO BE UPDATED target_angle = calc_Angle (boundingBoxArray[minimum_index].tl().x, boundingBoxArray[minimum_index].tl().y,boundingBoxArray[minimum_index].br().x, boundingBoxArray[minimum_index].br().y  );
                                         target_angle = calc_Angle (target_x, target_y, bottommidpoint[minimum_index].x , bottommidpoint[minimum_index].y  );
                                         //target_angle = 99.0;
