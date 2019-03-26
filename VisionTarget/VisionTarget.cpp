@@ -84,9 +84,6 @@ bool contoursAreValid(std::vector<std::vector<cv::Point>> contours)
 if(contours.size()!=2)
 return false;
 
-bool anglesAreValid = true;
-bool centersAreValid = true;
-
 double contourAngles [2] = {0, 0};
 float contourMinXs [2] = {0 , 0};
 float contourMaxXs [2] = {0, 0};
@@ -176,18 +173,23 @@ if(contourMinXs[0]<contourMinXs[1]) {
 float boundingRectCenterX = (fminf(contourMinXs[0], contourMinXs[1]) + fmaxf(contourMaxXs[0], contourMaxXs[1]))/2;
 	
 if(rtAngle<0 || ltAngle>0)
-anglesAreValid = false;
-
+{
+return false;
+}
 
 // the minimum required difference in pixels from the x center of a tape to the x center of the boudning box that surrounds the pair of tapes
 // this is to prevent the "pair" of contours from just being one contour inside another
 int minCenterDiff = 2; 
 if(abs(rightCenterX-boundingRectCenterX)<=minCenterDiff)
-centersAreValid = false;
+{
+return false;
+}
 if(abs(leftCenterX-boundingRectCenterX)<=minCenterDiff)
-centersAreValid = false;	
+{
+return false;	
+}
 
-return anglesAreValid && centersAreValid;
+return true;
 } //bool contoursAreValid
 
 //----------------------------------------------------------------------------------------------
@@ -511,11 +513,19 @@ if(debug)
 // calculates tape align error using tape areas
 double calcTapeAlignError() 
 {
-return (1-(rightTapeArea/leftTapeArea));
 
+/*
+double scaleDown = 10;
 double distanceToTapes = calcDistance(targetHeight);
 double tapeAreaDiff = leftTapeArea - rightTapeArea;
-return tapeAreaDiff*(distanceToTapes*distanceToTapes);
+double tapeAreaDiff = tapeAreaDiff * distanceToTapes * distanceToTapes;
+double CTAE = tapeAreaDiff/scaleDown;
+return CTAE;
+*/
+
+//return (1-(rightTapeArea/leftTapeArea));
+return (leftTapeArea-rightTapeArea)/leftTapeArea;
+
 } // double getTapeAlignError
 
 //----------------------------------------------------------------------------------------------
@@ -524,11 +534,12 @@ int main() {
 	grip::GripPipeline pipeline;
 	
 	// camera setup
+	int camera_dev_number = 0;
 	int cExposure = 15;
 	int cWhiteBalance = 5100;
 	int fps = 30;
 
-    cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0", 1);
+    cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0", camera_dev_number);
     cs::UsbCamera camera = *camera_pointer;
 	camera.SetResolution(cWidth, cHeight);
 	camera.SetExposureManual(cExposure);

@@ -47,17 +47,29 @@ void command_input()
 int main(){
 	std::thread console_thread(command_input);
 	// camera setup
+	int camera_dev_number = 0;
+	int cExposure = 15;
+	int cWhiteBalance = 5100;
+	int fps = 30;
 	int cWidth = 160;
 	int cHeight = 120;
-	int cWhiteBalance = 5100;
-	//frc::CameraServer::kBasePort = 5800;
-	cs::UsbCamera camera = frc::CameraServer::GetInstance()->StartAutomaticCapture();
-	camera.SetResolution(cWidth,cHeight);
+
+    cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0", camera_dev_number);
+    cs::UsbCamera camera = *camera_pointer;
+	camera.SetResolution(cWidth, cHeight);
 	camera.SetExposureManual(cExposure);
 	camera.SetWhiteBalanceManual(cWhiteBalance);
-	cs::CvSink cvSink = frc::CameraServer::GetInstance()->GetVideo();
+
+	cs::MjpegServer *mjpegServer1_pointer = new cs::MjpegServer("Forward Camera", 5805);
+    cs::MjpegServer mjpegServer1 = *mjpegServer1_pointer;
+    mjpegServer1.SetSource(camera);
+
+	cs::CvSink *cvSink_pointer = new cs::CvSink("Calibration USB Camera");
+    cs::CvSink cvSink = *cvSink_pointer;
+    cvSink.SetSource(camera);
 	cv::Mat source;
 	std::cout << "Input 0 to save image, Any other number sets exposure" << std::endl;
+
   	while(true) {
 	    camera.SetExposureManual(cExposure);
  	 	cvSink.GrabFrame(source);
