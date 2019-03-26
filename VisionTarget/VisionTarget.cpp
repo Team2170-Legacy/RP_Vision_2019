@@ -5,12 +5,12 @@
 #include <cameraserver/CameraServerShared.h>
 
 #include <opencv2/imgproc/imgproc.hpp>
-
 #include <opencv2/core/core.hpp>
 
 #include <thread>
 #include <chrono>
 
+#include <cmath>
 
 #include "GripPipeline.h"
 #include <string>
@@ -23,12 +23,14 @@
 
 //----------------------------------------------------------------------------------------------
 
-bool		debug = false; // set to true for debugging: additional video streams etc.
+const bool debug = false; // set to true for debugging: additional video streams, couts, etc.
 
 int cWidth = 160; // camera width
-float contourDetectionX = cWidth/2;; // the contour closest to this x is locked on to
- bool automove_flag = false; // whether or not automove is on            
+int cHeight = 120; // camera height
 
+float contourDetectionX = cWidth/2;; // the contour closest to this x is locked on to
+
+bool automove_flag = false; // whether or not automove is on            
 
 // data about locked contours, updated whenever a target is locked on too
 double 	targetWidth = 0; // width of bounding box of locked vision targets
@@ -39,7 +41,6 @@ double 	leftTapeHeight = 0; // height of left tape in locked target
 double 	rightTapeHeight = 0; // height of right tape in locked target
 double leftTapeAngle = 0; // angle of left tape in locked target
 double rightTapeAngle = 0; // angle of right tape in locked target
-double tapeAngleDifference = 0; 
 double leftTapeArea = 0; // area of left tape in locked target
 double rightTapeArea = 0; // area of right tape in locked target
 
@@ -73,26 +74,34 @@ double calc_Angle(double xt, double yt, double xb, double yb) {
 
 
     return angle;
-}
+} // double calc_Angle
 
+//----------------------------------------------------------------------------------------------
 
-// checks if 2 contours a valid grouping using their angles
-bool contoursAreValid( std::vector<std::vector<cv::Point>> contours) 
+// checks if 2 contours are a valid grouping using their angles, also checks to make sure that they are not one contour inside another
+bool contoursAreValid(std::vector<std::vector<cv::Point>> contours) 
 {
 if(contours.size()!=2)
 return false;
 
+bool anglesAreValid = true;
+bool centersAreValid = true;
+
 double contourAngles [2] = {0, 0};
 float contourMinXs [2] = {0 , 0};
+float contourMaxXs [2] = {0, 0};
 
 for(int c = 0; c < 2; c++) 
 {
-	
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
 		cv::Point2f corners[4];
 		boundingBox.points(corners);
-
-	contourMinXs[c] = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
+		
+		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
+		float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
+	
+	    contourMinXs[c] = MinX;
+	    contourMaxXs[c] = MaxX;
 
     float y_min1 = 100000;
 	int ind_min1 = 0;
@@ -138,36 +147,50 @@ for(int c = 0; c < 2; c++)
 			}
 	}
 
-
 	float bx = (corners[ind_max1].x+corners[ind_max2].x)/2;
 	float by = (corners[ind_max1].y+corners[ind_max2].y)/2;
 	float tx = (corners[ind_min1].x+corners[ind_min2].x)/2;
 	float ty = (corners[ind_min1].y+corners[ind_min2].y)/2;
     contourAngles[c] = calc_Angle(tx, ty, bx, by);
-
 }
 
 double ltAngle = 0;
 double rtAngle = 0;
+float leftCenterX = 0;
+float rightCenterX = 0;
+
 if(contourMinXs[0]<contourMinXs[1]) {
 	ltAngle = contourAngles[0];
 	rtAngle = contourAngles[1];
+	leftCenterX = (contourMinXs[0] + contourMaxXs[0])/2;
+	rightCenterX = (contourMinXs[1] + contourMaxXs[1])/2;
 	}
 	else 
 	{
     ltAngle = contourAngles[1];
 	rtAngle = contourAngles[0];
+	leftCenterX = (contourMinXs[1] + contourMaxXs[1])/2;
+	rightCenterX = (contourMinXs[0] + contourMaxXs[0])/2;
 	}
 
-if(rtAngle>=0 & ltAngle<=0)
-return true;
+float boundingRectCenterX = (fminf(contourMinXs[0], contourMinXs[1]) + fmaxf(contourMaxXs[0], contourMaxXs[1]))/2;
+	
+if(rtAngle<0 || ltAngle>0)
+anglesAreValid = false;
 
-return false;
-}//bool contoursAreValid
+
+// the minimum required difference in pixels from the x center of a tape to the x center of the boudning box that surrounds the pair of tapes
+// this is to prevent the "pair" of contours from just being one contour inside another
+int minCenterDiff = 2; 
+if(abs(rightCenterX-boundingRectCenterX)<=minCenterDiff)
+centersAreValid = false;
+if(abs(leftCenterX-boundingRectCenterX)<=minCenterDiff)
+centersAreValid = false;	
+
+return anglesAreValid && centersAreValid;
+} //bool contoursAreValid
 
 //----------------------------------------------------------------------------------------------
-
-
 
 cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> contours, cv::Scalar color, int thickness, bool updateLockedTargetData)
 {
@@ -185,8 +208,6 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	cv::Point2f* bottomRight;
 	cv::Point2f* bottomMidpt;
 	cv::Point2f* topMidpt;
-
-	
 
 	double contourHeights [2] = {0 , 0};
 	double contourAngles [2] = {0, 0};
@@ -276,9 +297,6 @@ if(updateLockedTargetData) {
 
 }
 
-
-	
-	
 	float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
 	float MaxX = fmaxf(bounding.at(0).at(1), bounding.at(1).at(1));
 	float MinY = fminf(bounding.at(0).at(2), bounding.at(1).at(2));
@@ -315,7 +333,6 @@ if(updateLockedTargetData) {
 	leftTapeArea = contourAreas[1];
 	rightTapeArea = contourAreas[0];
 	}
-tapeAngleDifference = leftTapeAngle + rightTapeAngle;
 }
 
 	return drawing;
@@ -323,15 +340,18 @@ tapeAngleDifference = leftTapeAngle + rightTapeAngle;
 
 //----------------------------------------------------------------------------------------------
 
-
 cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
 	if(!automove_flag)
+	{
 	contourDetectionX = cWidth/2;
+	}
+    else 
+	{
+    // draws a blue circle where the contour detection point is
+	cv::circle(source, cv::Point2f(contourDetectionX, cHeight/2), 5, cv::Scalar(220, 54, 28));
+	}
 	
-	// draws a small blue circle where the contour detection point is
-	// if(debug)
-	cv::circle(source, cv::Point2f(contourDetectionX, 60), 3, cv::Scalar(255, 0, 0));
 
 	int num_contours = contours.size();
 	int midpointBox[num_contours];
@@ -342,8 +362,6 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 
 	if (num_contours >= 2) 
 	{
-
-
 		for (int count = 0; count < num_contours; count++) {
 			cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
 			cv::Point2f corners[4];
@@ -435,42 +453,78 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 } // cv::Mat lock_target
 
 //----------------------------------------------------------------------------------------------
+
 // given height of the bounding box of a locked target calulates the distance in feet the robot is away from the target
 double calcDistance(double height){
-	if(debug) {
-	std::cout << "ContourHeight: " + std::to_string(height)  << std::endl;
-	}
-		double yCoordArr [11] = {8, 9, 10, 11, 13, 15, 18, 22, 31, 50, 160};
-		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
-		double yCoord = height;
-	int arrSize = 11;
-	double distance = 0;
-	if( yCoord > yCoordArr[arrSize - 1]){
-		return 0;
-	}
-		if( yCoord < yCoordArr[0]){
-		return 10;
+	
+	if(debug) 
+	{
+	std::cout << "TargetHeight: " + std::to_string(height);
 	}
 
+	    double distance = 0;
+        int arrSize = 11;
+		double yCoordArr [11] = {8, 9, 10, 11, 13, 15, 18, 22, 31, 50, 160};
+		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
+
+	double yCoord = height;
+		if( yCoord > yCoordArr[arrSize - 1])
+		{
+			return 0;
+		}
+		if(yCoord < 0) 
+		{
+			return 0;
+		}
+		if( yCoord < yCoordArr[0])
+		{
+			return 10;
+		}
+
+// code that uses power regression to calculate distances more accurately
+// an external program has to be used to perform regression for height against distance (yCoordArr vs. distances)
+// when performing regression, exclude the last value in yCoordArr and distances
+    double exponent = -1.25353;
+    double coefficient = 143.6513278;
+	distance = pow(height, exponent) * coefficient;
+
+// code in case regression can't be done when distance table has to recalibrated, this works but with slightly lower accuracy
+/*
 	for(int i = 0; i < arrSize -1; i++){
 		// Search from longest distance (lowest y) to shortest distance (highest y)
 		if(yCoord > yCoordArr[i] && yCoord < yCoordArr[i + 1]){ //yCoordArr goes in order, distance is flipped
 			distance = ((yCoordArr[i +1] - yCoord)/(yCoordArr[i+1] - yCoordArr[i]))*(distances[i] - distances[i+1]) + distances[i+1];
 		}
 	}
+*/
+
+if(debug) 
+{
+	std::cout <<" Distance: " + std::to_string(distance) << std::endl;
+}
 	return distance;
+} // double calc_Distance
+
+//----------------------------------------------------------------------------------------------
 
 
-} 
+// calculates tape align error using tape areas
+double calcTapeAlignError() 
+{
+return (1-(rightTapeArea/leftTapeArea));
 
+double distanceToTapes = calcDistance(targetHeight);
+double tapeAreaDiff = leftTapeArea - rightTapeArea;
+return tapeAreaDiff*(distanceToTapes*distanceToTapes);
+} // double getTapeAlignError
+
+//----------------------------------------------------------------------------------------------
 
 int main() {
 	grip::GripPipeline pipeline;
 	
 	// camera setup
-    int cHeight = 120;
 	int cExposure = 15;
-	int cExposure_temp  = cExposure;
 	int cWhiteBalance = 5100;
 	int fps = 30;
 
@@ -520,7 +574,6 @@ int main() {
 	inst.StartClient("10.21.70.2",port);
 	auto table = inst.GetTable("VisionTable");
 
-    nt::NetworkTableEntry tape_angle_difference = table->GetEntry("tape_angle_difference");
 	nt::NetworkTableEntry left_tape_angle = table->GetEntry("left_tape_angle");
 	nt::NetworkTableEntry right_tape_angle = table->GetEntry("right_tape_angle");
 	nt::NetworkTableEntry left_tape_height =  table->GetEntry("left_tape_height");
@@ -529,7 +582,6 @@ int main() {
 	nt::NetworkTableEntry x_target_error =  table->GetEntry("x_target_error");
 	nt::NetworkTableEntry left_tape_area = table->GetEntry("left_tape_area");
 	nt::NetworkTableEntry right_tape_area = table->GetEntry("right_tape_area");
-	nt::NetworkTableEntry tape_area_difference = table->GetEntry("tape_area_difference");
 	nt::NetworkTableEntry tape_align_error = table->GetEntry("tape_align_error");
     nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
 	nt::NetworkTableEntry exposure =  table->GetEntry("exposure");
@@ -537,6 +589,8 @@ int main() {
 
     nt::NetworkTableEntry automove = table->GetEntry("automove");
     automove.SetBoolean(false);
+   
+   //----------------------------------------------------------------------------------------------
    
 	while (true) {
 		automove_flag = automove.GetBoolean("automove");
@@ -551,11 +605,13 @@ int main() {
 			};
 			contours_ptr = pipeline.GetFilterContoursOutput();
 			contours = *contours_ptr;
-			
+			if(debug)
+			{
+            std::cout << std::to_string(contours.size()) + " Contours Detected" << std::endl;
+			}
 			if (contours.size()>=2) { 
 				cv::Mat rect_output = lock_target(source, contours);
 				outputStreamStd.PutFrame(rect_output);
-
 			}
 			else
 			{
@@ -570,26 +626,23 @@ int main() {
 				distance_to_target.SetDouble(calcDistance(targetHeight));
 				left_tape_height.SetDouble(leftTapeHeight);
 				right_tape_height.SetDouble(rightTapeHeight);
-				tape_angle_difference.SetDouble(tapeAngleDifference);
 				left_tape_angle.SetDouble(leftTapeAngle);
 				right_tape_angle.SetDouble(rightTapeAngle);
                 left_tape_area.SetDouble(leftTapeArea);
 				right_tape_area.SetDouble(rightTapeArea);
-				tape_align_error.SetDouble(1-(rightTapeArea/leftTapeArea));
+				tape_align_error.SetDouble(calcTapeAlignError());
 
-/*
-				std::cout << "tapeAngleDifference: ";
-				std::cout << tapeAngleDifference << std::endl;
+                if(debug)
+				 {
+                /*
 				std::cout << "leftTapeAngle: ";
 				std::cout << leftTapeAngle << std::endl;
 				std::cout << "rightTapeAngle: ";
 				std::cout << rightTapeAngle << std::endl;
 				*/
 
-                if(debug)
-				 {
 			    std::cout << "tapeAreaError: ";
-				std::cout << 1-(rightTapeArea/leftTapeArea) << std::endl;
+				std::cout << calcTapeAlignError() << std::endl;
 				std::cout << "leftTapeArea: ";
 				std::cout << leftTapeArea << std::endl;
 				std::cout << "rightTapeArea: ";
@@ -598,7 +651,7 @@ int main() {
 
 			}
 			else {
-				contourDetectionX = cWidth/2;
+				//contourDetectionX = cWidth/2;
 				outputStreamStd.PutFrame(source);
 			    distance_to_target.SetDouble(0);
 				x_target_error.SetDouble(0);
@@ -606,15 +659,13 @@ int main() {
 				right_tape_height.SetDouble(0);
 				right_tape_area.SetDouble(0);
 				left_tape_area.SetDouble(0);
-				tape_area_difference.SetDouble(0);
 				left_tape_angle.SetDouble(0);
 				right_tape_angle.SetDouble(0);
-				tape_angle_difference.SetDouble(0);
 				tape_align_error.SetDouble(0);
 			}
 
-			cExposure_temp 	= table->GetNumber("exposure",15);
-			camera.SetExposureManual(cExposure_temp);
+			cExposure	= table->GetNumber("exposure",15);
+			camera.SetExposureManual(cExposure);
 			
 		} 
 	} 
