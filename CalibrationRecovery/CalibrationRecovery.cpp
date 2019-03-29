@@ -24,8 +24,7 @@
 
 bool save_image;
 int counter = 0;
-int cExposure = 2;
-
+int cExposure = 15;
 
 void command_input()
 {
@@ -48,7 +47,6 @@ int main(){
 	std::thread console_thread(command_input);
 	// camera setup
 	int camera_dev_number = 0;
-	int cExposure = 15;
 	int cWhiteBalance = 5100;
 	int fps = 30;
 	int cWidth = 160;
