@@ -55,7 +55,7 @@ grip::GripPipeline pipeline;
     {
     repeat = false;
     std::string imname;
-    std::cout << "Enter Image Name" << std::endl;
+    std::cout << "Enter Image Name of an Image in /~/Calibration/images/" << std::endl;
     getline(std::cin, imname);
 
     cv::Mat source = cv::imread("/home/pi/Calibration/images/" + imname);
@@ -84,7 +84,7 @@ grip::GripPipeline pipeline;
         }
         else
         {
-        std::cout << "The image is blank" << std::endl;
+        std::cout << "Image Not Found" << std::endl;
         }
     std::cout << "Press enter to find the height of another image" << std::endl;
         if(std::cin.get() == '\n')

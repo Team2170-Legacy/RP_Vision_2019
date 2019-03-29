@@ -23,6 +23,8 @@
 
 //----------------------------------------------------------------------------------------------
 
+bool cameraIsUpsideDown = false; // for when someone screws up and the image needs to be rotated
+
 const bool debug = false; // set to true for debugging: additional video streams, couts, etc.
 
 int cWidth = 160; // camera width
@@ -524,7 +526,9 @@ return CTAE;
 */
 
 //return (1-(rightTapeArea/leftTapeArea));
-return (leftTapeArea-rightTapeArea)/leftTapeArea;
+//return (leftTapeArea-rightTapeArea)/leftTapeArea;
+
+return (leftTapeArea - rightTapeArea);
 
 } // double getTapeAlignError
 
@@ -606,6 +610,11 @@ int main() {
 	while (true) {
 		automove_flag = automove.GetBoolean("automove");
 		cvSink.GrabFrame(source);
+		if(cameraIsUpsideDown) 
+		{
+		 // flips image
+         cv::flip(source, source, -1);
+		}
 		if (source.rows > 0) {
 			pipeline.Process(source);
 			if ( debug )
