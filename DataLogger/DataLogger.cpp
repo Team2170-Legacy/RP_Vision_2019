@@ -12,16 +12,17 @@ bool logData = false;
 
 void command_input()
 {
-	 while(true) 
-    {
+	//  while(true) 
+    // {
         std::cout << "Press Enter to Start Data Logging";
         if (std::cin.get() == '\n')
         {
-            logData = !logData;
+            logData = true; //!logData;
                 
             if(!logData) 
             {
             std::cout << "Data Logging Ended: Press Enter to Resume Data Logging";
+            logData = false;
             }
             else 
             {
@@ -29,7 +30,7 @@ void command_input()
             }   
         }
 
-    }
+//    }
 }
 
 int main(){
@@ -50,42 +51,53 @@ nt::NetworkTableEntry distance_to_target =  table->GetEntry("distance_to_target"
 const double NUM_SECONDS = .1; // unit is seconds
 clock_t this_time = clock(); // unit is clockticks
 clock_t last_time = this_time; // unit is clockticks
-double time_counter = 0; // unit is clockticks
+//double time_counter = 0; // unit is clockticks
 int count = 0;
 
 // create dataLog file variable
 std::ofstream dataLog;
 
+dataLog.open("/home/pi/DataLogger/Log_0001.txt");
+
     while (logData) 
     {
-    this_time = clock();
-    time_counter += (double)(this_time - last_time);
-    last_time = this_time;
+        this_time = clock();
+//    time_counter += (double)(this_time - last_time);
+        time_counter = (double)(this_time - last_time);
 
         // the code in this if statement runs once every NUM_SECONDS
-        if(time_counter > (double)(NUM_SECONDS * CLOCKS_PER_SEC))
+        if (time_counter > (double)(NUM_SECONDS * CLOCKS_PER_SEC))
         {
-        time_counter = 0;
-              
-        // reading info from network tables
-        double xte =  x_target_error.GetDouble(0); 
-        double tae =  tape_align_error.GetDouble(0);
-        double distance = distance_to_target.GetDouble(0);
+            last_time = this_time;
+                
+            // reading info from network tables
+            double xte =  x_target_error.GetDouble(0); 
+            double tae =  tape_align_error.GetDouble(0);
+            double distance = distance_to_target.GetDouble(0);
 
-        // writing to the dataLog
-        dataLog.open("/home/pi/DataLogger/Log");
-        dataLog << "Data Log Entry " + std::to_string(count) + "\n";
-        dataLog << "Time Since Logging Started: " + std::to_string(time_counter/CLOCKS_PER_SEC + (double)(count * NUM_SECONDS)) + " seconds" + "\n";
-        dataLog << "X Target Error: " + std::to_string(xte) + "\n";
-        dataLog << "Tape Align Error: " + std::to_string(tae) + "\n";
-        dataLog << "Distance (VisionTarget Based): " + std::to_string(distance) + "\n";
-        dataLog << "\n";
-        dataLog.close();
+            // writing to the dataLog
+            dataLog.open("/home/pi/DataLogger/Log");
+            dataLog << "Data Log Entry " + std::to_string(count) + "\n";
+            dataLog << "Time Since Logging Started: " + std::to_string(time_counter/CLOCKS_PER_SEC + (double)(count * NUM_SECONDS)) + " seconds" + "\n";
+            dataLog << "X Target Error: " + std::to_string(xte) + "\n";
+            dataLog << "Tape Align Error: " + std::to_string(tae) + "\n";
+            dataLog << "Distance (VisionTarget Based): " + std::to_string(distance) + "\n";
+            dataLog << "\n";
+            
+            dataLog.open("/home/pi/DataLogger/Log");
+            dataLog << "Data Log Entry " + std::to_string(count) + "\n";
+            dataLog << "Time Since Logging Started: " + std::to_string(time_counter/CLOCKS_PER_SEC + (double)(count * NUM_SECONDS)) + " seconds" + "\n";
+            dataLog << "X Target Error: " + std::to_string(xte) + "\n";
+            dataLog << "Tape Align Error: " + std::to_string(tae) + "\n";
+            dataLog << "Distance (VisionTarget Based): " + std::to_string(distance) + "\n";
+            dataLog << "\n";
 
-        count++;
-       }
+
+            count++;
+        }
     }
-    
+   
+   dataLog.close();
    console_thread.join();
    return 0;
 }
