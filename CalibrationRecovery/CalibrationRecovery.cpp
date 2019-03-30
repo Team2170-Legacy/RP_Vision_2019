@@ -83,9 +83,9 @@ int main(){
 		myfile.open ("/home/pi/Calibration/images/"+ std::to_string(counter) + ".txt");
 		myfile << "Exposure: " + std::to_string(cExposure) + "\n";
 		myfile.close();
-		
+		save_image = false;
 	}
-	save_image = false;
+	
 
 		}
 			
