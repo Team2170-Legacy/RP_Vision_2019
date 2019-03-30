@@ -539,7 +539,7 @@ int main() {
 	
 	// camera setup
 	int camera_dev_number = 0;
-	int cExposure = 15;
+	int cExposure = 1;
 	int cWhiteBalance = 5100;
 	int fps = 30;
 

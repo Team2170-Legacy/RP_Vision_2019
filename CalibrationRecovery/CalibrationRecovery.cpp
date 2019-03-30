@@ -77,7 +77,7 @@ int main(){
 	{
 		counter++;
 		std::cout <<  "Saving Image:" << std::endl;
-		cv::imwrite("/home/pi/Calibration/images/" + std::to_string(counter) + ".jpg",source);
+		cv::imwrite("/home/pi/Calibration/images/" + std::to_string(counter) + ".jpg", source);
 		std::cout << "/home/pi/Calibration/images/"+  std::to_string(counter) + ".jpg" << std::endl;
 		std::ofstream myfile;
 		myfile.open ("/home/pi/Calibration/images/"+ std::to_string(counter) + ".txt");

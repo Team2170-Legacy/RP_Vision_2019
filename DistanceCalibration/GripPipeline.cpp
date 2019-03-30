@@ -1,4 +1,3 @@
-
 #include "GripPipeline.h"
 #include "VisionTarget_Calibration.h"
 
