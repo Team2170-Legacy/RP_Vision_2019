@@ -45,6 +45,7 @@ double leftTapeAngle = 0; // angle of left tape in locked target
 double rightTapeAngle = 0; // angle of right tape in locked target
 double leftTapeArea = 0; // area of left tape in locked target
 double rightTapeArea = 0; // area of right tape in locked target
+double distanceToTarget = 0;
 
 /*
 void write_log(string message)
@@ -83,6 +84,8 @@ double calc_Angle(double xt, double yt, double xb, double yb) {
 // checks if 2 contours are a valid grouping using their angles, also checks to make sure that they are not one contour inside another
 bool contoursAreValid(std::vector<std::vector<cv::Point>> contours) 
 {
+std::vector<std::vector<float>> bounding;
+
 if(contours.size()!=2)
 return false;
 
@@ -98,6 +101,8 @@ for(int c = 0; c < 2; c++)
 		
 		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
 		float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
+		float MinY = fminf(corners[0].y, fminf(corners[1].y, fminf(corners[2].y, corners[3].y)));
+		float MaxY = fmaxf(corners[0].y, fmaxf(corners[1].y, fmaxf(corners[2].y, corners[3].y)));
 	
 	    contourMinXs[c] = MinX;
 	    contourMaxXs[c] = MaxX;
@@ -110,6 +115,13 @@ for(int c = 0; c < 2; c++)
 	int ind_max1 = 0;
 	float y_max2 = 0;
 	int ind_max2 = 0;
+
+	std::vector<float> tmp;
+	tmp.push_back(MinX);
+	tmp.push_back(MaxX);
+	tmp.push_back(MinY);
+	tmp.push_back(MaxY);
+	bounding.push_back(tmp);
 	
 	for( int j = 0; j < 4; j++ )
 	{
@@ -172,7 +184,22 @@ if(contourMinXs[0]<contourMinXs[1]) {
 	rightCenterX = (contourMinXs[0] + contourMaxXs[0])/2;
 	}
 
-float boundingRectCenterX = (fminf(contourMinXs[0], contourMinXs[1]) + fmaxf(contourMaxXs[0], contourMaxXs[1]))/2;
+float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
+float MaxX = fmaxf(bounding.at(0).at(1), bounding.at(1).at(1));
+float MinY = fminf(bounding.at(0).at(2), bounding.at(1).at(2));
+float MaxY = fmaxf(bounding.at(0).at(3), bounding.at(1).at(3));
+
+float boundingRectCenterX = (MinX + MaxX)/2;
+float boundingWidth = MaxX - MinX;
+float boundingHeight = MaxY - MinY;
+float actualAspectRatio = boundingWidth/boundingHeight;
+float optimalAspectRatio = 2.3;
+float aspectRatioMargin = 0.5;
+
+if(abs(actualAspectRatio - optimalAspectRatio) > aspectRatioMargin)
+{
+return false;
+}
 	
 if(rtAngle<0 || ltAngle>0)
 {
@@ -181,7 +208,7 @@ return false;
 
 // the minimum required difference in pixels from the x center of a tape to the x center of the boudning box that surrounds the pair of tapes
 // this is to prevent the "pair" of contours from just being one contour inside another
-int minCenterDiff = 2; 
+double minCenterDiff = 1; 
 if(abs(rightCenterX-boundingRectCenterX)<=minCenterDiff)
 {
 return false;
@@ -313,9 +340,10 @@ if(updateLockedTargetData) {
 	cv::line(drawing, *bottomLeft, *bottomRight, color, thickness);
 	cv::line(drawing, *bottomRight, *topRight, color, thickness);
 	cv::line(drawing, *topRight, *topLeft, color, thickness);
-	cv::circle(drawing, cv::Point2f((MinX + MaxX) / 2, (MinY + MaxY) / 2), 5, cv::Scalar(255, 255, 255));
+	
 	
 	if(updateLockedTargetData) {
+	cv::circle(drawing, cv::Point2f((MinX + MaxX) / 2, (MinY + MaxY) / 2), 5, cv::Scalar(255, 255, 255));
 	 targetCenterX = ((MinX + MaxX) / 2);
 	 targetWidth = (double)(MaxX - MinX);
 	 targetHeight = (double)(MaxY - MinY);
@@ -355,17 +383,28 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
     // draws a blue circle where the contour detection point is
 	cv::circle(source, cv::Point2f(contourDetectionX, cHeight/2), 5, cv::Scalar(220, 54, 28));
 	}
-	
 
 	int num_contours = contours.size();
-	int midpointBox[num_contours];
-	int differenceMidpoints[num_contours];
-	std::vector<cv::Rect> boundingBoxArray;
-	int minimum = 0;
-	int minimum2 = 0;
 
-	if (num_contours >= 2) 
+    if(num_contours < 2)
 	{
+	return source; 
+	}
+	else if(num_contours == 2)
+	{
+		std::vector<std::vector<cv::Point>> center_contours;
+		center_contours.push_back(contours.at(0));
+		center_contours.push_back(contours.at(1));
+		if(contoursAreValid(center_contours))
+		{
+		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 2, true);
+		}
+	}
+	else if (num_contours > 2) 
+	{
+		int midpointBox[num_contours];
+	    std::vector<cv::Rect> boundingBoxArray;
+
 		for (int count = 0; count < num_contours; count++) {
 			cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
 			cv::Point2f corners[4];
@@ -375,86 +414,101 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 			int midx = (MinX + MaxX) / 2;
 			midpointBox[count] = midx;
 		}
-		
-		
-		for (int count = 0; count < num_contours; count++) {
-			differenceMidpoints[count] = abs((contourDetectionX) - midpointBox[count]);
-		}
 
-		for (int count = 1; count < num_contours; count++) {
-			if (differenceMidpoints[count] < differenceMidpoints[minimum]) 
-				minimum = count;
-			}
-
-			for (int count = 1; count < num_contours; count++) {
-				if (differenceMidpoints[minimum2] > differenceMidpoints[count] && count != minimum)
-					minimum2 = count;
-
-		
-	}
-	}
-	else {
-		targetLocked = false;
-		return source;
-	}
-	if (num_contours > 2) 
-	{
-		for (int count = 0; count < num_contours - 1; count += 2) {
-				std::vector<std::vector<cv::Point>> all_contours;
-				all_contours.push_back(contours.at(count));
-				all_contours.push_back(contours.at(count + 1));
-				 if(contoursAreValid(all_contours))
-				source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1, false);
-			
-		}
-		std::vector<std::vector<cv::Point>> center_contours;
-		center_contours.push_back(contours.at(minimum));
-		center_contours.push_back(contours.at(minimum2));
-	    if(contoursAreValid(center_contours)) {
-		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
-		}
-		else {
-			int groupDifferences[num_contours];
-			for(int i = 0; i<num_contours; i++ ) {
-				groupDifferences[i] = INT_MAX;
-			}
-			for (int count = 0; count < num_contours - 1; count += 2) {
-				std::vector<std::vector<cv::Point>> grouped_contours;
-				grouped_contours.push_back(contours.at(count));
-				grouped_contours.push_back(contours.at(count + 1));
-				if(contoursAreValid(grouped_contours)) {
-				groupDifferences[count] = (differenceMidpoints[count] + differenceMidpoints[count+1])/2;
-				 }
-			}
-			int dminIndex = 0;
-			for(int i = 0; i<num_contours; i++ ) {
-				if(groupDifferences[i]<groupDifferences[dminIndex])
-				{
-				dminIndex = i;
-				}
-			}
-			
-		std::vector<std::vector<cv::Point>> centergrouped_contours;
-		centergrouped_contours.push_back(contours.at(dminIndex));
-		centergrouped_contours.push_back(contours.at(dminIndex+1));
-		source = detect_rectangles(source, centergrouped_contours, cv::Scalar(0, 0, 255), 4, true);
-
-		}
-		
-	}
-	else if (num_contours == 2)
-	{
-		std::vector<std::vector<cv::Point>> center_contours;
-		center_contours.push_back(contours.at(0));
-		center_contours.push_back(contours.at(1));
-		if(contoursAreValid(center_contours))
+		// draw over all valid contours in white
+		std::cout << num_contours << std::endl;
+		for(int count = 0; count < num_contours - 1; count++)
 		{
-		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 4, true);
+        std::vector<std::vector<cv::Point>> all_contours;
+	    all_contours.push_back(contours.at(count));
+		all_contours.push_back(contours.at(count + 1));
+        if(contoursAreValid(all_contours))
+		{
+			 bool noContoursInBetween = true;
+					 int minmid = std::min(midpointBox[count], midpointBox[count+1]);
+					 int maxmid = std::min(midpointBox[count], midpointBox[count+1]);
+					 for(int n = 0; n<num_contours; n++) 
+					 {
+						 if(n!=count && n!=(count+1))
+						 {
+							 if(midpointBox[n] > minmid && midpointBox[n] < maxmid)
+							 {
+                                noContoursInBetween = false;
+							 }
+						 }
+					 }
+					 if(noContoursInBetween)
+					 {
+					source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1, false);
+					 }
+	    }
 		}
-	}
+		
+		 int groupContourDistances[num_contours-1];
+		 
+		 for(int index = 0; index < num_contours; index++) 
+		 {
+		  groupContourDistances[index] = 100000;
+		 }
+         
 
+		 for(int i = 0; i<num_contours-1; i++)
+		 {
+
+				std::vector<std::vector<cv::Point>> group_contours;
+	            group_contours.push_back(contours.at(i));
+		        group_contours.push_back(contours.at(i+1));
+				
+				 if(contoursAreValid(group_contours))
+				 {
+					 bool noContoursInBetween = true;
+					 int minmid = std::min(midpointBox[i], midpointBox[i+1]);
+					 int maxmid = std::min(midpointBox[i], midpointBox[i+1]);
+					 for(int n = 0; n<num_contours; n++) 
+					 {
+
+						 if(n!=i && n!=(i+1))
+						 {
+							 if(midpointBox[n] > minmid && midpointBox[n] < maxmid)
+							 {
+                                noContoursInBetween = false;
+							 }
+						 }
+					 }
+					 if(noContoursInBetween)
+					 {
+					groupContourDistances[i] = round(abs(contourDetectionX - ((midpointBox[i] + midpointBox[i+1])/2)));
+					 }
+				 }
+		 }
+			   
+			   int minIndex = 0;
+		 for(int b = 0; b < num_contours; b++) 
+		 {
+			// std::cout<<"contour distances" <<std::endl;
+			// std::cout<<b <<std::endl;
+			// std::cout<<groupContourDistances[b] <<std::endl;
+          if(groupContourDistances[b] < groupContourDistances[minIndex])
+		  {
+			  minIndex = b;
+		  }
+		 }
+
+		std::vector<std::vector<cv::Point>> group_contours;
+	    group_contours.push_back(contours.at(minIndex));
+		group_contours.push_back(contours.at(minIndex+1));
+		if(contoursAreValid(group_contours))
+		{
+			//std::cout<<"locking"<<std::endl;
+			//std::cout<<minIndex <<std::endl;
+        source = detect_rectangles(source, group_contours, cv::Scalar(0, 0, 255), 2, true);
+		}
+	
+	}
+		 
 	return source;
-} // cv::Mat lock_target
+
+} // cv:Mat lock_target
 
 //----------------------------------------------------------------------------------------------
 
@@ -467,9 +521,9 @@ double calcDistance(double height){
 	}
 
 	    double distance = 0;
-        int arrSize = 11;
-		double yCoordArr [11] = {8, 9, 10, 11, 13, 15, 18, 22, 31, 50, 160};
-		double distances[] = {10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
+        int arrSize = 9;
+		double yCoordArr [9] = {6,   7,   8,   10,  12,  15,  20,  29,  45};
+		double distances[] =   {8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
 
 	double yCoord = height;
 		if( yCoord > yCoordArr[arrSize - 1])
@@ -485,22 +539,12 @@ double calcDistance(double height){
 			return 10;
 		}
 
-// code that uses power regression to calculate distances more accurately
-// an external program has to be used to perform regression for height against distance (yCoordArr vs. distances)
-// when performing regression, exclude the last value in yCoordArr and distances
-    double exponent = -1.25353;
-    double coefficient = 143.6513278;
-	distance = pow(height, exponent) * coefficient;
-
-// code in case regression can't be done when distance table has to recalibrated, this works but with slightly lower accuracy
-/*
 	for(int i = 0; i < arrSize -1; i++){
 		// Search from longest distance (lowest y) to shortest distance (highest y)
 		if(yCoord > yCoordArr[i] && yCoord < yCoordArr[i + 1]){ //yCoordArr goes in order, distance is flipped
 			distance = ((yCoordArr[i +1] - yCoord)/(yCoordArr[i+1] - yCoordArr[i]))*(distances[i] - distances[i+1]) + distances[i+1];
 		}
 	}
-*/
 
 if(debug) 
 {
@@ -539,7 +583,7 @@ int main() {
 	
 	// camera setup
 	int camera_dev_number = 0;
-	int cExposure = 15;
+	int cExposure = 1;
 	int cWhiteBalance = 5100;
 	int fps = 30;
 
@@ -640,10 +684,11 @@ int main() {
   
  		
  			target_locked.SetBoolean(targetLocked);
-			if(targetLocked) {
 
+			if(targetLocked) {
+                distanceToTarget = calcDistance(targetHeight);
 				x_target_error.SetDouble(targetCenterX - (cWidth/2));
-				distance_to_target.SetDouble(calcDistance(targetHeight));
+				distance_to_target.SetDouble(distanceToTarget);
 				left_tape_height.SetDouble(leftTapeHeight);
 				right_tape_height.SetDouble(rightTapeHeight);
 				left_tape_angle.SetDouble(leftTapeAngle);

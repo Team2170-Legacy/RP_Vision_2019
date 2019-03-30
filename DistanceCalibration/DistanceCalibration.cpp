@@ -53,12 +53,13 @@ grip::GripPipeline pipeline;
 
     while (repeat)
     {
-    repeat = false;
+  //  repeat = true;
     std::string imname;
-    std::cout << "Enter Image Name of an Image in /~/Calibration/images/" << std::endl;
+    std::cout << "Enter Image Name of an Image in ~/Calibration/images/" << std::endl;
     getline(std::cin, imname);
-
-    cv::Mat source = cv::imread("/home/pi/Calibration/images/" + imname);
+    std::string path = "/home/pi/Calibration/images/" + imname;
+    cv::Mat source = cv::imread(path);
+    std::cout << "Reading Image: " + path << std::endl;
     std::vector<std::vector<cv::Point> >* contours_ptr;
     std::vector<std::vector<cv::Point> > contours;
 
@@ -86,11 +87,13 @@ grip::GripPipeline pipeline;
         {
         std::cout << "Image Not Found" << std::endl;
         }
+        /*
     std::cout << "Press enter to find the height of another image" << std::endl;
         if(std::cin.get() == '\n')
         {
             repeat = true;
         }
+        */
 
     }
 
