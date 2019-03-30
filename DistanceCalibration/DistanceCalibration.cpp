@@ -57,7 +57,7 @@ grip::GripPipeline pipeline;
     std::string imname;
     std::cout << "Enter Image Name of an Image in ~/Calibration/images/" << std::endl;
     getline(std::cin, imname);
-    std::string path = "~/Calibration/images/" + imname;
+    std::string path = "/home/pi/Calibration/images/" + imname;
     cv::Mat source = cv::imread(path);
     std::cout << "Reading Image: " + path << std::endl;
     std::vector<std::vector<cv::Point> >* contours_ptr;
