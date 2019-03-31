@@ -1,4 +1,4 @@
-//#include "WPILib.h"
+
 #include <cscore.h>
 #include <cscore_cpp.h>
 #include <cameraserver/CameraServer.h>
@@ -45,18 +45,7 @@ double leftTapeAngle = 0; // angle of left tape in locked target
 double rightTapeAngle = 0; // angle of right tape in locked target
 double leftTapeArea = 0; // area of left tape in locked target
 double rightTapeArea = 0; // area of right tape in locked target
-double distanceToTarget = 0;
-
-/*
-void write_log(string message)
-{
-	// Open and write the message to a file using input output operations 
-	std::ofstream myfile;
-		fs.open ("/home/pi/RP_Vision_2019/VisionTarget/Log.txt", std::fstream::in | std::fstream::out | std::fstream::app);
-		myfile << message + "\n";
-		myfile.close();
-}
-*/
+double distanceToTarget = 0; // distance to locked target
 
 //----------------------------------------------------------------------------------------------
 
@@ -89,6 +78,7 @@ std::vector<std::vector<float>> bounding;
 if(contours.size()!=2)
 return false;
 
+double contourAreas [2] = {0, 0};
 double contourAngles [2] = {0, 0};
 float contourMinXs [2] = {0, 0};
 float contourMaxXs [2] = {0, 0};
@@ -98,6 +88,7 @@ float contourMaxYs [2] = {0, 0};
 for(int c = 0; c < 2; c++) 
 {
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
+		contourAreas[c] = cv::contourArea(contours[c]);
 		cv::Point2f corners[4];
 		boundingBox.points(corners);
 		
@@ -181,25 +172,29 @@ if(contourMinXs[0]<contourMinXs[1]) {
 	rightCenterX = (contourMinXs[0] + contourMaxXs[0])/2;
 	}
 
-
+float MinX = fminf(contourMinXs[0], contourMinXs[1]);
+float MaxX = fmaxf(contourMaxXs[0], contourMaxXs[1]);
 float MinY = fminf(contourMinYs[0], contourMinYs[1]);
 float MaxY = fmaxf(contourMaxYs[0], contourMaxYs[1]);
 
-float boundingRectCenterX = (MinX + MaxX)/2;
 float boundingWidth = MaxX - MinX;
 float boundingHeight = MaxY - MinY;
 float actualAspectRatio = boundingWidth/boundingHeight;
-float optimalAspectRatio = 2.3;
-float aspectRatioMargin = 0.7;
+float optimalAspectRatio = 2.25;
+float aspectRatioMargin = 0.75;
 
 if(abs(actualAspectRatio - optimalAspectRatio) > aspectRatioMargin)
 {
 return false;
 }
-	
+
+// only bother checking angles if the pixel area of the contours is above 10	
+if(contourAreas[0] > 10 && contourAreas[1] > 10)
+{
 if(rtAngle<0 || ltAngle>0)
 {
 return false;
+}
 }
 
 return true;
@@ -230,9 +225,6 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 	float contourMinXs [2] = {0 , 0};
 	for (int c = 0; c < 2; c++)
 	{
-		if(debug) {
-       std::cout << "Getting minAreaRect for Contour with area " + std::to_string(cv::contourArea(contours[c])) << std::endl;
-		}
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[c]);
 		contourAreas[c] = cv::contourArea(contours[c]);
 		cv::Point2f corners[4];
@@ -356,12 +348,13 @@ if(updateLockedTargetData) {
 
 //----------------------------------------------------------------------------------------------
 
-// sorts contours left to right based on their midpoint x values
+// sorts contours left to right based on their center x values
 std::vector<std::vector<cv::Point>> sortContours(std::vector<std::vector<cv::Point>> contours) 
 {
 int num_contours = contours.size();
 int contourOrder[num_contours];
     
+	// populate contour order array with values 0 to num_contours-1
 	for(int i = 0; i<num_contours; i++)
 	{
 		contourOrder[i] = i;
@@ -369,6 +362,7 @@ int contourOrder[num_contours];
   
 int contourXs[num_contours];
 
+    // populate contourXs array with the contour center x values
 	for (int count = 0; count < num_contours; count++) 
 	{
 		cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
@@ -381,27 +375,31 @@ int contourXs[num_contours];
 	}
 
     // selection sort 
-    // One by one move boundary of unsorted subarray 
+    // move boundary of unsorted subarray 
     for (int i = 0; i < num_contours-1; i++) 
     { 
-        // Find the minimum element in unsorted array 
+        // find the minimum element in unsorted array 
         int min_idx = i; 
-        for (int j = i+1; j < num_contours; j++) 
+        for (int j = i+1; j < num_contours; j++)
+		{ 
           if (contourXs[j] < contourXs[min_idx]) 
 		  {
             min_idx = j; 
 		  }
+		}
   
-        // Swap the found minimum element with the first element 
+        // swap the found minimum element with the first element 
 		int temp = contourXs[min_idx];
 		contourXs[min_idx] = contourXs[i];
         contourXs[i] = temp; 
         
+		// make the same swap in the contour order array
 		int temp2 = contourOrder[min_idx];
 		contourOrder[min_idx] = contourOrder[i];
 		contourOrder[i] = temp2;
     }
 
+// populate outputContours array with contours but in correct order
 std::vector<std::vector<cv::Point>> outputContours; 
 for(int i = 0; i < num_contours; i++)
 {
@@ -413,8 +411,11 @@ return outputContours;
 
 //----------------------------------------------------------------------------------------------
 
+
+// identifies the valid target closest to the contour detection point and locks onto it
 cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
+	// if not moving autonomously use center as the contour detection point
 	if(!automove_flag)
 	{
 	contourDetectionX = cWidth/2;
@@ -422,17 +423,19 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
     else 
 	{
     // draws a blue circle where the contour detection point is
-	cv::circle(source, cv::Point2f(contourDetectionX, cHeight/2), 5, cv::Scalar(220, 54, 28));
+	cv::circle(source, cv::Point2f(contourDetectionX, cHeight/2), 5, cv::Scalar(255, 191, 0));
 	}
 
 	int num_contours = contours.size();
 
     if(num_contours < 2)
 	{
+	// when there are not 2 contours in view nothing is locked onto
 	return source; 
 	}
 	else if(num_contours == 2)
 	{
+		// when there is only 2 contours in view lock onto them if they are valid
 		std::vector<std::vector<cv::Point>> center_contours;
 		center_contours.push_back(contours.at(0));
 		center_contours.push_back(contours.at(1));
@@ -443,9 +446,12 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 	}
 	else if (num_contours > 2) 
 	{
+		// sort contours left to right
 		contours = sortContours(contours);
+
 		int midpointBox[num_contours];
 
+        // populate midpointBox arr with midpoints of contours
 		for (int count = 0; count < num_contours; count++) 
 		{
 			cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
@@ -455,6 +461,22 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 			float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
 			int midx = (MinX + MaxX) / 2;
 			midpointBox[count] = midx;
+		}
+
+        
+        // temp code to check that sortContours works correctly
+		bool sortWorked = true;
+		for (int count = 1; count < num_contours; count++) 
+		{
+			if(midpointBox[count]<midpointBox[count-1])
+			{
+				std::cout << "CONTOUR SORTING DID NOT WORK CORRECTLY" << std::endl;
+				sortWorked = false;
+			}
+		}
+		if(sortWorked) 
+		{
+			std::cout << "Contour Sorting Algorithim is Working!" << std::endl;
 		}
 
 		// draw over all valid contours in white
@@ -472,12 +494,13 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		
 		 int groupContourDistances[num_contours-1];
 		 
-		 for(int index = 0; index < num_contours; index++) 
+		 // populate groupContourDistances arr with high values
+		 for(int index = 0; index < num_contours-1; index++) 
 		 {
 		  groupContourDistances[index] = 100000;
 		 }
          
-
+         // get distance from contour detection point for each valid target
 		 for(int i = 0; i<num_contours-1; i++)
 		 {
 
@@ -491,9 +514,9 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 				 }
 		 }
     
-			   
-			   int minIndex = 0;
-		 for(int b = 0; b < num_contours; b++) 
+		 // get valid target that has the least distance from contour detection point
+		 int minIndex = 0;
+		 for(int b = 0; b < num_contours-1; b++) 
 		 {
 			if(groupContourDistances[b] < groupContourDistances[minIndex])
 			{
@@ -544,7 +567,8 @@ double calcDistance(double height){
 			return 10;
 		}
 
-	for(int i = 0; i < arrSize -1; i++){
+	for(int i = 0; i < arrSize -1; i++)
+	{
 		// Search from longest distance (lowest y) to shortest distance (highest y)
 		if(yCoord > yCoordArr[i] && yCoord < yCoordArr[i + 1]){ //yCoordArr goes in order, distance is flipped
 			distance = ((yCoordArr[i +1] - yCoord)/(yCoordArr[i+1] - yCoordArr[i]))*(distances[i] - distances[i+1]) + distances[i+1];
@@ -721,7 +745,6 @@ int main() {
 
 			}
 			else {
-				//contourDetectionX = cWidth/2;
 				outputStreamStd.PutFrame(source);
 			    distance_to_target.SetDouble(0);
 				x_target_error.SetDouble(0);
