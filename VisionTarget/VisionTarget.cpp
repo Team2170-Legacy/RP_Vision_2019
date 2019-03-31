@@ -81,7 +81,7 @@ double calc_Angle(double xt, double yt, double xb, double yb) {
 
 //----------------------------------------------------------------------------------------------
 
-// checks if 2 contours are a valid grouping using their angles, also checks to make sure that they are not one contour inside another
+// checks if 2 contours are a valid grouping using their angles and aspect ratio
 bool contoursAreValid(std::vector<std::vector<cv::Point>> contours) 
 {
 std::vector<std::vector<float>> bounding;
@@ -90,8 +90,10 @@ if(contours.size()!=2)
 return false;
 
 double contourAngles [2] = {0, 0};
-float contourMinXs [2] = {0 , 0};
+float contourMinXs [2] = {0, 0};
 float contourMaxXs [2] = {0, 0};
+float contourMinYs [2] = {0, 0};
+float contourMaxYs [2] = {0, 0};
 
 for(int c = 0; c < 2; c++) 
 {
@@ -106,6 +108,8 @@ for(int c = 0; c < 2; c++)
 	
 	    contourMinXs[c] = MinX;
 	    contourMaxXs[c] = MaxX;
+		contourMinYs[c] = MinY;
+	    contourMaxYs[c] = MaxY;
 
     float y_min1 = 100000;
 	int ind_min1 = 0;
@@ -115,13 +119,6 @@ for(int c = 0; c < 2; c++)
 	int ind_max1 = 0;
 	float y_max2 = 0;
 	int ind_max2 = 0;
-
-	std::vector<float> tmp;
-	tmp.push_back(MinX);
-	tmp.push_back(MaxX);
-	tmp.push_back(MinY);
-	tmp.push_back(MaxY);
-	bounding.push_back(tmp);
 	
 	for( int j = 0; j < 4; j++ )
 	{
@@ -184,17 +181,16 @@ if(contourMinXs[0]<contourMinXs[1]) {
 	rightCenterX = (contourMinXs[0] + contourMaxXs[0])/2;
 	}
 
-float MinX = fminf(bounding.at(0).at(0), bounding.at(1).at(0));
-float MaxX = fmaxf(bounding.at(0).at(1), bounding.at(1).at(1));
-float MinY = fminf(bounding.at(0).at(2), bounding.at(1).at(2));
-float MaxY = fmaxf(bounding.at(0).at(3), bounding.at(1).at(3));
+
+float MinY = fminf(contourMinYs[0], contourMinYs[1]);
+float MaxY = fmaxf(contourMaxYs[0], contourMaxYs[1]);
 
 float boundingRectCenterX = (MinX + MaxX)/2;
 float boundingWidth = MaxX - MinX;
 float boundingHeight = MaxY - MinY;
 float actualAspectRatio = boundingWidth/boundingHeight;
 float optimalAspectRatio = 2.3;
-float aspectRatioMargin = 0.5;
+float aspectRatioMargin = 0.7;
 
 if(abs(actualAspectRatio - optimalAspectRatio) > aspectRatioMargin)
 {
@@ -204,18 +200,6 @@ return false;
 if(rtAngle<0 || ltAngle>0)
 {
 return false;
-}
-
-// the minimum required difference in pixels from the x center of a tape to the x center of the boudning box that surrounds the pair of tapes
-// this is to prevent the "pair" of contours from just being one contour inside another
-double minCenterDiff = 1; 
-if(abs(rightCenterX-boundingRectCenterX)<=minCenterDiff)
-{
-return false;
-}
-if(abs(leftCenterX-boundingRectCenterX)<=minCenterDiff)
-{
-return false;	
 }
 
 return true;
@@ -372,6 +356,63 @@ if(updateLockedTargetData) {
 
 //----------------------------------------------------------------------------------------------
 
+// sorts contours left to right based on their midpoint x values
+std::vector<std::vector<cv::Point>> sortContours(std::vector<std::vector<cv::Point>> contours) 
+{
+int num_contours = contours.size();
+int contourOrder[num_contours];
+    
+	for(int i = 0; i<num_contours; i++)
+	{
+		contourOrder[i] = i;
+	}
+  
+int contourXs[num_contours];
+
+	for (int count = 0; count < num_contours; count++) 
+	{
+		cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
+		cv::Point2f corners[4];
+		boundingBox.points(corners);
+		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
+		float MaxX = fmaxf(corners[0].x, fmaxf(corners[1].x, fmaxf(corners[2].x, corners[3].x)));
+		int midx = (MinX + MaxX) / 2;
+		contourXs[count] = midx;
+	}
+
+    // selection sort 
+    // One by one move boundary of unsorted subarray 
+    for (int i = 0; i < num_contours-1; i++) 
+    { 
+        // Find the minimum element in unsorted array 
+        int min_idx = i; 
+        for (int j = i+1; j < num_contours; j++) 
+          if (contourXs[j] < contourXs[min_idx]) 
+		  {
+            min_idx = j; 
+		  }
+  
+        // Swap the found minimum element with the first element 
+		int temp = contourXs[min_idx];
+		contourXs[min_idx] = contourXs[i];
+        contourXs[i] = temp; 
+        
+		int temp2 = contourOrder[min_idx];
+		contourOrder[min_idx] = contourOrder[i];
+		contourOrder[i] = temp2;
+    }
+
+std::vector<std::vector<cv::Point>> outputContours; 
+for(int i = 0; i < num_contours; i++)
+{
+outputContours.push_back(contours.at(contourOrder[i]));
+}
+
+return outputContours;
+} //cv::Mat sortContours
+
+//----------------------------------------------------------------------------------------------
+
 cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours)
 {
 	if(!automove_flag)
@@ -402,10 +443,11 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 	}
 	else if (num_contours > 2) 
 	{
+		contours = sortContours(contours);
 		int midpointBox[num_contours];
-	    std::vector<cv::Rect> boundingBoxArray;
 
-		for (int count = 0; count < num_contours; count++) {
+		for (int count = 0; count < num_contours; count++) 
+		{
 			cv::RotatedRect boundingBox = cv::minAreaRect(contours[count]);
 			cv::Point2f corners[4];
 			boundingBox.points(corners);
@@ -416,32 +458,16 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		}
 
 		// draw over all valid contours in white
-		std::cout << num_contours << std::endl;
 		for(int count = 0; count < num_contours - 1; count++)
 		{
-        std::vector<std::vector<cv::Point>> all_contours;
-	    all_contours.push_back(contours.at(count));
-		all_contours.push_back(contours.at(count + 1));
-        if(contoursAreValid(all_contours))
-		{
-			 bool noContoursInBetween = true;
-					 int minmid = std::min(midpointBox[count], midpointBox[count+1]);
-					 int maxmid = std::min(midpointBox[count], midpointBox[count+1]);
-					 for(int n = 0; n<num_contours; n++) 
-					 {
-						 if(n!=count && n!=(count+1))
-						 {
-							 if(midpointBox[n] > minmid && midpointBox[n] < maxmid)
-							 {
-                                noContoursInBetween = false;
-							 }
-						 }
-					 }
-					 if(noContoursInBetween)
-					 {
-					source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1, false);
-					 }
-	    }
+			std::vector<std::vector<cv::Point>> all_contours;
+			all_contours.push_back(contours.at(count));
+			all_contours.push_back(contours.at(count + 1));
+			if(contoursAreValid(all_contours))
+			{
+				source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1, false);			 
+			}
+
 		}
 		
 		 int groupContourDistances[num_contours-1];
@@ -461,47 +487,26 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 				
 				 if(contoursAreValid(group_contours))
 				 {
-					 bool noContoursInBetween = true;
-					 int minmid = std::min(midpointBox[i], midpointBox[i+1]);
-					 int maxmid = std::min(midpointBox[i], midpointBox[i+1]);
-					 for(int n = 0; n<num_contours; n++) 
-					 {
-
-						 if(n!=i && n!=(i+1))
-						 {
-							 if(midpointBox[n] > minmid && midpointBox[n] < maxmid)
-							 {
-                                noContoursInBetween = false;
-							 }
-						 }
-					 }
-					 if(noContoursInBetween)
-					 {
 					groupContourDistances[i] = round(abs(contourDetectionX - ((midpointBox[i] + midpointBox[i+1])/2)));
-					 }
 				 }
 		 }
+    
 			   
 			   int minIndex = 0;
 		 for(int b = 0; b < num_contours; b++) 
 		 {
-			// std::cout<<"contour distances" <<std::endl;
-			// std::cout<<b <<std::endl;
-			// std::cout<<groupContourDistances[b] <<std::endl;
-          if(groupContourDistances[b] < groupContourDistances[minIndex])
-		  {
-			  minIndex = b;
-		  }
+			if(groupContourDistances[b] < groupContourDistances[minIndex])
+			{
+				minIndex = b;
+			}
 		 }
 
-		std::vector<std::vector<cv::Point>> group_contours;
-	    group_contours.push_back(contours.at(minIndex));
-		group_contours.push_back(contours.at(minIndex+1));
-		if(contoursAreValid(group_contours))
+		std::vector<std::vector<cv::Point>> locked_contours;
+	    locked_contours.push_back(contours.at(minIndex));
+		locked_contours.push_back(contours.at(minIndex+1));
+		if(contoursAreValid(locked_contours))
 		{
-			//std::cout<<"locking"<<std::endl;
-			//std::cout<<minIndex <<std::endl;
-        source = detect_rectangles(source, group_contours, cv::Scalar(0, 0, 255), 2, true);
+        source = detect_rectangles(source, locked_contours, cv::Scalar(0, 0, 255), 2, true);
 		}
 	
 	}
