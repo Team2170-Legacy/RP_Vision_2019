@@ -24,10 +24,11 @@
 
 bool save_image;
 int counter = 0;
-int cExposure = 15;
+int cExposure = 1;
 
 void command_input()
 {
+
 	int input_num;
 	 while(true) {
 		
@@ -66,6 +67,8 @@ int main(){
     cs::CvSink cvSink = *cvSink_pointer;
     cvSink.SetSource(camera);
 	cv::Mat source;
+	
+	std::cout << "Current Exposure is " + cExposure << std::endl;
 	std::cout << "Input 0 to save image, Any other number sets exposure" << std::endl;
 
   	while(true) {
