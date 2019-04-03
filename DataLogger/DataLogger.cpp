@@ -87,7 +87,7 @@ std::cout << "Starting Data Logging...\n";
 //key_ch = getchar();
 
 // time variables setup, note they are not all in same units
-const double PERIOD = 0.100; // unit is seconds
+const double PERIOD = 0.050; // unit is seconds
 const double DURATION = 10.0;       // [s]  Time duration to log data for
 
 clock_t this_time = clock(); // unit is clockticks
