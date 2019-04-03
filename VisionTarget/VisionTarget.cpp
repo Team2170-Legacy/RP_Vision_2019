@@ -27,12 +27,18 @@ bool cameraIsUpsideDown = false; // for when someone screws up and the image nee
 
 const bool debug = false; // set to true for debugging: additional video streams, couts, etc.
 
-int cWidth = 160; // camera width
-int cHeight = 120; // camera height
+int cWidth = 320; // camera width
+int cHeight = 240; // camera height
 
 float contourDetectionX = cWidth/2;; // the contour closest to this x is locked on to
 
 bool automove_flag = false; // whether or not automove is on            
+
+int arrSize = 9;
+// double yCoordArr [9] = {6,   7,   8,   10,  12,  15,  20,  29,  45};
+double yCoordArr [9] = {12,   14,   16,   20,  24,  30,  40,  58,  90};
+double distances[] =   {8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
+
 
 // data about locked contours, updated whenever a target is locked on too
 double 	targetWidth = 0; // width of bounding box of locked vision targets
@@ -45,7 +51,7 @@ double leftTapeAngle = 0; // angle of left tape in locked target
 double rightTapeAngle = 0; // angle of right tape in locked target
 double leftTapeArea = 0; // area of left tape in locked target
 double rightTapeArea = 0; // area of right tape in locked target
-double distanceToTarget = 0; // distance to locked target
+double distanceToTarget = distances[0]; // distance to locked target
 
 //----------------------------------------------------------------------------------------------
 
@@ -189,13 +195,13 @@ return false;
 }
 
 // only bother checking angles if the pixel area of the contours is above 10	
-if(contourAreas[0] > 10 && contourAreas[1] > 10)
-{
+// if(contourAreas[0] > 8 && contourAreas[1] > 8)
+ // {
 if(rtAngle<0 || ltAngle>0)
 {
 return false;
 }
-}
+ // }
 
 return true;
 } //bool contoursAreValid
@@ -464,20 +470,6 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		}
 
         
-        // temp code to check that sortContours works correctly
-		bool sortWorked = true;
-		for (int count = 1; count < num_contours; count++) 
-		{
-			if(midpointBox[count]<midpointBox[count-1])
-			{
-				std::cout << "CONTOUR SORTING DID NOT WORK CORRECTLY" << std::endl;
-				sortWorked = false;
-			}
-		}
-		if(sortWorked) 
-		{
-			std::cout << "Contour Sorting Algorithim is Working!" << std::endl;
-		}
 
 		// draw over all valid contours in white
 		for(int count = 0; count < num_contours - 1; count++)
@@ -549,9 +541,13 @@ double calcDistance(double height){
 	}
 
 	    double distance = 0;
-        int arrSize = 9;
-		double yCoordArr [9] = {6,   7,   8,   10,  12,  15,  20,  29,  45};
-		double distances[] =   {8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0};
+      
+
+    double defaultValue = distances[0];
+	if(automove_flag)
+    {
+	defaultValue = distanceToTarget;
+	}
 
 	double yCoord = height;
 		if( yCoord > yCoordArr[arrSize - 1])
@@ -564,7 +560,7 @@ double calcDistance(double height){
 		}
 		if( yCoord < yCoordArr[0])
 		{
-			return 10;
+			return defaultValue;
 		}
 
 	for(int i = 0; i < arrSize -1; i++)
@@ -622,10 +618,11 @@ int main() {
 	camera.SetExposureManual(cExposure);
 	camera.SetWhiteBalanceManual(cWhiteBalance);
 
+/*
 	cs::MjpegServer *mjpegServer1_pointer = new cs::MjpegServer("Forward Camera", 5805);
     cs::MjpegServer mjpegServer1 = *mjpegServer1_pointer;
     mjpegServer1.SetSource(camera);
-
+*/
 	cs::CvSink *cvSink_pointer = new cs::CvSink("Vision Target USB Camera");
     cs::CvSink cvSink = *cvSink_pointer;
     cvSink.SetSource(camera);
@@ -673,7 +670,10 @@ int main() {
 	nt::NetworkTableEntry tape_align_error = table->GetEntry("tape_align_error");
     nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
 	nt::NetworkTableEntry exposure =  table->GetEntry("exposure");
+	nt::NetworkTableEntry vt_exposure_flag =  table->GetEntry("vt_exposure_flag");
 	exposure.SetDouble(cExposure);
+
+    bool vtExposureFlag = false;
 
     nt::NetworkTableEntry automove = table->GetEntry("automove");
     automove.SetBoolean(false);
@@ -681,6 +681,7 @@ int main() {
    //----------------------------------------------------------------------------------------------
    
 	while (true) {
+		vtExposureFlag = vt_exposure_flag.GetBoolean("vt_exposure_flag");
 		automove_flag = automove.GetBoolean("automove");
 		cvSink.GrabFrame(source);
 		if(cameraIsUpsideDown) 
@@ -756,9 +757,17 @@ int main() {
 				right_tape_angle.SetDouble(0);
 				tape_align_error.SetDouble(0);
 			}
-
-			cExposure	= table->GetNumber("exposure",15);
+            
+			int normalDrivingExposure = 20;
+			//cExposure	= table->GetNumber("exposure",1);
+			if(vtExposureFlag)
+			{
 			camera.SetExposureManual(cExposure);
+			}
+			else
+			{
+			camera.SetExposureManual(normalDrivingExposure);
+			}
 			
 		} 
 	} 

@@ -1,3 +1,4 @@
+CALL UpdatePipeline.bat
 set /P ip=10.21.70.22
 set /P copyfilename=DistanceCalibration
 make

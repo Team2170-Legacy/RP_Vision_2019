@@ -12,7 +12,7 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step HSV_Threshold0:
 	//input
 	cv::Mat hsvThresholdInput = source0;
-  double hsvThresholdHue[] = {H_min, H_max};
+	double hsvThresholdHue[] = {H_min, H_max};
 	double hsvThresholdSaturation[] = {S_min, S_max};
 	double hsvThresholdValue[] = {V_min, V_max};
 	hsvThreshold(hsvThresholdInput, hsvThresholdHue, hsvThresholdSaturation, hsvThresholdValue, this->hsvThresholdOutput);
@@ -28,7 +28,7 @@ void GripPipeline::Process(cv::Mat& source0){
 	//Step Filter_Contours0:
 	//input
 	std::vector<std::vector<cv::Point> > filterContoursContours = convexHullsOutput;
-	double filterContoursMinArea = 2.0;  // default Double
+	double filterContoursMinArea = 1.0;  // default Double
 	double filterContoursMinPerimeter = 0.0;  // default Double
 	double filterContoursMinWidth = 0.0;  // default Double
 	double filterContoursMaxWidth = 1000.0;  // default Double
@@ -38,7 +38,7 @@ void GripPipeline::Process(cv::Mat& source0){
 	double filterContoursMaxVertices = 100.0;  // default Double
 	double filterContoursMinVertices = 2.0;  // default Double
 	double filterContoursMinRatio = 0.1;  // default Double
-	double filterContoursMaxRatio = 0.9;  // default Double
+	double filterContoursMaxRatio = 1.5;  // default Double
 	filterContours(filterContoursContours, filterContoursMinArea, filterContoursMinPerimeter, filterContoursMinWidth, filterContoursMaxWidth, filterContoursMinHeight, filterContoursMaxHeight, filterContoursSolidity, filterContoursMaxVertices, filterContoursMinVertices, filterContoursMinRatio, filterContoursMaxRatio, this->filterContoursOutput);
 }
 

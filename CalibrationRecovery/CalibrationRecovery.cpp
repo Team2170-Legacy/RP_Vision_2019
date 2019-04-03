@@ -50,8 +50,8 @@ int main(){
 	int camera_dev_number = 0;
 	int cWhiteBalance = 5100;
 	int fps = 30;
-	int cWidth = 160;
-	int cHeight = 120;
+	int cWidth = 320;
+	int cHeight = 240;
 
     cs::UsbCamera *camera_pointer = new cs::UsbCamera("USB Camera 0", camera_dev_number);
     cs::UsbCamera camera = *camera_pointer;
