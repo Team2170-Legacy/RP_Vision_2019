@@ -22,6 +22,8 @@
 #include "networktables/EntryListenerFlags.h"
 
 //----------------------------------------------------------------------------------------------
+//cv::Scalar lockColor = cv::Scalar(0, 0, 255);
+cv::Scalar lockColor = cv::Scalar(0, 255, 0);
 
 bool cameraIsUpsideDown = false; // for when someone screws up and the image needs to be rotated
 
@@ -447,7 +449,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		center_contours.push_back(contours.at(1));
 		if(contoursAreValid(center_contours))
 		{
-		source = detect_rectangles(source, center_contours, cv::Scalar(0, 0, 255), 2, true);
+		source = detect_rectangles(source, center_contours, lockColor, 2, true);
 		}
 	}
 	else if (num_contours > 2) 
@@ -521,7 +523,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 		locked_contours.push_back(contours.at(minIndex+1));
 		if(contoursAreValid(locked_contours))
 		{
-        source = detect_rectangles(source, locked_contours, cv::Scalar(0, 0, 255), 2, true);
+        source = detect_rectangles(source, locked_contours, lockColor, 2, true);
 		}
 	
 	}
@@ -763,9 +765,11 @@ int main() {
 			if(vtExposureFlag)
 			{
 			camera.SetExposureManual(cExposure);
+			//std::cout << "setting to exposure " + cExposure << std::endl;
 			}
 			else
 			{
+		     //std::cout << "setting to normal driving exposure" << std::endl;
 			camera.SetExposureManual(normalDrivingExposure);
 			}
 			
