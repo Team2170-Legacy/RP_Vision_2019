@@ -650,7 +650,7 @@ int main() {
 	std::vector<std::vector<cv::Point> >* contours_ptr;
 	std::vector<std::vector<cv::Point> > contours;
 
-	//----------------------------------------------------------------------------------------------
+	//---------------------------------------------------------------------------------------------
 
 	//network tables setup
 	unsigned int port = 1735;
