@@ -22,11 +22,19 @@
 #include "networktables/EntryListenerFlags.h"
 
 //----------------------------------------------------------------------------------------------
-//cv::Scalar lockColor = cv::Scalar(0, 0, 255);
-cv::Scalar lockColor = cv::Scalar(0, 255, 0);
 
-bool cameraIsUpsideDown = false; // for when someone screws up and the image needs to be rotated
+// constant global color values
+const cv::Scalar blue = (255, 0 ,0);
+const cv::Scalar green = (0, 255, 0);
+const cv::Scalar red = (0, 0, 255);
+const cv::Scalar white = (255, 255, 255);
+const cv::Scalar lockColor = green;
 
+// exposure settings
+const int detectionExposure = 1;
+const int drivingExposure = 20;
+
+const bool cameraIsUpsideDown = false; // for when someone screws up and the image needs to be rotated
 const bool debug = false; // set to true for debugging: additional video streams, couts, etc.
 
 int cWidth = 320; // camera width
@@ -67,7 +75,7 @@ double calc_Angle(double xt, double yt, double xb, double yb) {
     {
         angle = -180.0/pi * ( atan( abs(del_x)/abs(del_y)) );
     } 
-    else  // leadning towards the left
+    else  // leaning towards the left
     {
         angle = +180.0/pi * ( atan( abs(del_x)/abs(del_y)) );
     }
@@ -238,10 +246,10 @@ cv::Mat detect_rectangles(cv::Mat source, std::vector<std::vector<cv::Point>> co
 		cv::Point2f corners[4];
 		boundingBox.points(corners);
 		// 0 is topleft, goes counter - clockwise from there
-		cv::line(drawing, corners[0], corners[1], cv::Scalar(255, 255, 255));
-		cv::line(drawing, corners[1], corners[2], cv::Scalar(255, 255, 255));
-		cv::line(drawing, corners[2], corners[3], cv::Scalar(255, 255, 255));
-		cv::line(drawing, corners[3], corners[0], cv::Scalar(255, 255, 255));
+		cv::line(drawing, corners[0], corners[1], white);
+		cv::line(drawing, corners[1], corners[2], white);
+		cv::line(drawing, corners[2], corners[3], white);
+		cv::line(drawing, corners[3], corners[0], white);
 		float MinY = fminf(corners[0].y, fminf(corners[1].y, fminf(corners[2].y, corners[3].y)));
 		float MaxY = fmaxf(corners[0].y, fmaxf(corners[1].y, fmaxf(corners[2].y, corners[3].y)));
 		float MinX = fminf(corners[0].x, fminf(corners[1].x, fminf(corners[2].x, corners[3].x)));
@@ -327,7 +335,7 @@ if(updateLockedTargetData) {
 	
 	
 	if(updateLockedTargetData) {
-	cv::circle(drawing, cv::Point2f((MinX + MaxX) / 2, (MinY + MaxY) / 2), 5, cv::Scalar(255, 255, 255));
+	cv::circle(drawing, cv::Point2f((MinX + MaxX) / 2, (MinY + MaxY) / 2), 5, white);
 	 targetCenterX = ((MinX + MaxX) / 2);
 	 targetWidth = (double)(MaxX - MinX);
 	 targetHeight = (double)(MaxY - MinY);
@@ -481,7 +489,7 @@ cv::Mat lock_target(cv::Mat source, std::vector<std::vector<cv::Point>> contours
 			all_contours.push_back(contours.at(count + 1));
 			if(contoursAreValid(all_contours))
 			{
-				source = detect_rectangles(source, all_contours, cv::Scalar(255, 255, 255), 1, false);			 
+				source = detect_rectangles(source, all_contours, white, 1, false);			 
 			}
 
 		}
@@ -610,7 +618,8 @@ int main() {
 	
 	// camera setup
 	int camera_dev_number = 0;
-	int cExposure = 1;
+	//int cExposure = detectionExposure;
+	int cExposure = drivingExposure;
 	int cWhiteBalance = 5100;
 	int fps = 30;
 
@@ -671,10 +680,12 @@ int main() {
 	nt::NetworkTableEntry right_tape_area = table->GetEntry("right_tape_area");
 	nt::NetworkTableEntry tape_align_error = table->GetEntry("tape_align_error");
     nt::NetworkTableEntry target_locked =  table->GetEntry("target_locked");
+	
 	nt::NetworkTableEntry exposure =  table->GetEntry("exposure");
-	nt::NetworkTableEntry vt_exposure_flag =  table->GetEntry("vt_exposure_flag");
 	exposure.SetDouble(cExposure);
 
+    nt::NetworkTableEntry vt_exposure_flag =  table->GetEntry("vt_exposure_flag");
+	vt_exposure_flag.SetBoolean(false);
     bool vtExposureFlag = false;
 
     nt::NetworkTableEntry automove = table->GetEntry("automove");
@@ -760,17 +771,16 @@ int main() {
 				tape_align_error.SetDouble(0);
 			}
             
-			int normalDrivingExposure = 20;
 			//cExposure	= table->GetNumber("exposure",1);
 			if(vtExposureFlag)
 			{
+			cExposure = detectionExposure;
 			camera.SetExposureManual(cExposure);
-			//std::cout << "setting to exposure " + cExposure << std::endl;
 			}
 			else
 			{
-		     //std::cout << "setting to normal driving exposure" << std::endl;
-			camera.SetExposureManual(normalDrivingExposure);
+		    cExposure = drivingExposure;
+			camera.SetExposureManual(cExposure);
 			}
 			
 		} 
