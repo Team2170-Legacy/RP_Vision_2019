@@ -21,16 +21,21 @@
 #include "networktables/NetworkTableInstance.h"
 #include "networktables/EntryListenerFlags.h"
 
+#include <time.h>
+
 //----------------------------------------------------------------------------------------------
+
+// start delay in seconds
+double start_delay = 60.0;
 
 // constant global color values
 const cv::Scalar blue = (255, 0 ,0);
 const cv::Scalar green = (0, 255, 0);
 const cv::Scalar red = (0, 0, 255);
 const cv::Scalar white = (255, 255, 255);
-const cv::Scalar lockColor = green;
+const cv::Scalar lockColor = red;
 
-// exposure settings
+// constant global exposure values
 const int detectionExposure = 1;
 const int drivingExposure = 20;
 
@@ -614,6 +619,19 @@ return (leftTapeArea - rightTapeArea);
 //----------------------------------------------------------------------------------------------
 
 int main() {
+
+	std::cout << "Delaying for " + std::to_string(start_delay) << std::endl;
+	double dt = 0.0;
+	clock_t start_time = clock();
+
+	while(dt<start_delay)
+	{
+		dt = ((double)clock() - (double)start_time)/(double)CLOCKS_PER_SEC;
+
+	}
+
+	std::cout << "end delay" << std::endl;
+
 	grip::GripPipeline pipeline;
 	
 	// camera setup
@@ -696,20 +714,29 @@ int main() {
 	while (true) {
 		vtExposureFlag = vt_exposure_flag.GetBoolean("vt_exposure_flag");
 		automove_flag = automove.GetBoolean("automove");
+		std::cout << "checkpoint 1" << std::endl;
 		cvSink.GrabFrame(source);
+		std::cout << "checkpoint 2" << std::endl;
 		if(cameraIsUpsideDown) 
 		{
 		 // flips image
          cv::flip(source, source, -1);
 		}
 		if (source.rows > 0) {
+			if(cExposure!=drivingExposure)
+			{
+
+			
+				std::cout << "checkpoint 3" << std::endl;
 			pipeline.Process(source);
+				std::cout << "checkpoint 4" << std::endl;
 			if ( debug )
 			{
 				hsv_mat_ptr = pipeline.GetHsvThresholdOutput();
 				hsv_mat = *hsv_mat_ptr;
 				outputStreamHSV.PutFrame(hsv_mat);
 			};
+		
 			contours_ptr = pipeline.GetFilterContoursOutput();
 			contours = *contours_ptr;
 			if(debug)
@@ -776,13 +803,21 @@ int main() {
 			{
 			cExposure = detectionExposure;
 			camera.SetExposureManual(cExposure);
+			std::cout << "         exposure set to " + cExposure << std::endl;
 			}
 			else
 			{
 		    cExposure = drivingExposure;
 			camera.SetExposureManual(cExposure);
+			std::cout << "         exposure set to " + cExposure << std::endl;
 			}
 			
+		}
+		else 
+		{
+			outputStreamStd.PutFrame(source);
+	
+		}
 		} 
 	} 
 	
